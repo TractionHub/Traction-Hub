@@ -1,0 +1,2254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Startup Diagnostic System</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #F0FDF4; color: #1F2937; margin: 0; }
+        .container { max-width: 700px; margin: 40px auto; background: #fff; border-radius: 10px; box-shadow: 0 0 20px rgba(0,0,0,0.08); padding: 32px 24px; }
+        @media (max-width: 768px) { .container { margin: 20px 10px; padding: 20px 15px; max-width: calc(100% - 20px); } }
+        .progress-bar { width: 100%; background: #eee; border-radius: 5px; height: 10px; margin-bottom: 24px; }
+        .progress { height: 10px; background: linear-gradient(90deg, #0D9488, #F59E0B); border-radius: 5px; transition: width 0.3s; }
+        .step { display: none; }
+        .step.active { display: block; }
+        .form-group { margin-bottom: 24px; }
+        label { font-weight: 500; display: block; margin-bottom: 8px; }
+        label.required::after { content: " *"; color: #DC2626; }
+        input, select, textarea { width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc; font-size: 1rem; background-color: #F3F4F6; }
+        .button-row { display: flex; justify-content: space-between; margin-top: 24px; }
+        button { padding: 10px 24px; border: none; border-radius: 5px; background-color: #0D9488; color: #fff; font-size: 1rem; cursor: pointer; }
+        button:hover { background-color: #0F766E; }
+        button[disabled] { background: #ccc; cursor: not-allowed; }
+        .results { background: #f8f9fa; border-radius: 8px; padding: 24px; margin-top: 32px; }
+        .results h2 { color: #0D9488; }
+        .hidden { display: none; }
+        .success-message { background: #d4edda; color: #155724; padding: 15px; border-radius: 5px; margin: 10px 0; }
+        .error-message { background: #f8d7da; color: #721c24; padding: 15px; border-radius: 5px; margin: 10px 0; }
+        .consent-screen { text-align: center; padding: 40px 20px; max-width: 800px; margin: 0 auto; }
+        .consent-screen h2 { color: #0D9488; margin-bottom: 20px; }
+        .consent-screen p { margin-bottom: 30px; line-height: 1.6; }
+        .consent-details { text-align: left; background: #f8f9fa; border-radius: 8px; padding: 24px; margin: 30px 0; border: 1px solid #e9ecef; }
+        .consent-details h3 { color: #374151; margin: 20px 0 10px 0; font-size: 1.1rem; }
+        .consent-details h3:first-child { margin-top: 0; }
+        .consent-details ul { margin: 15px 0; padding-left: 20px; }
+        .consent-details li { margin: 8px 0; line-height: 1.5; }
+        .consent-details strong { color: #0D9488; }
+        .consent-buttons { display: flex; gap: 15px; justify-content: center; margin-top: 30px; }
+        .consent-buttons button:first-child { background-color: #0D9488; }
+        .consent-buttons button:last-child { background-color: #6B7280; }
+        .metric-score { display: flex; align-items: center; margin: 10px 0; }
+        .metric-score .label { flex: 1; }
+        .metric-score .score { width: 100px; text-align: right; font-weight: bold; }
+        .score-red { color: #DC2626; }
+        .score-amber { color: #F59E0B; }
+        .score-green { color: #059669; }
+        .recommendations { background: #FEF3C7; border-left: 4px solid #F59E0B; padding: 15px; margin: 20px 0; }
+        .other-input { margin-top: 10px; }
+        
+        /* Help Icon Styles */
+        .help-icon {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            background: #0D9488;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            z-index: 1000;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            transition: all 0.2s ease;
+        }
+        .help-icon:hover {
+            background: #0F766E;
+            transform: scale(1.05);
+        }
+        .help-popup {
+            position: fixed;
+            top: 70px;
+            right: 20px;
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 1001;
+            max-width: 300px;
+            display: none;
+        }
+        .help-popup.show {
+            display: block;
+            animation: fadeIn 0.2s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .help-popup h4 {
+            color: #0D9488;
+            margin: 0 0 10px 0;
+            font-size: 16px;
+        }
+        .help-popup p {
+            color: #374151;
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+        .help-popup a {
+            color: #0D9488;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .help-popup a:hover {
+            text-decoration: underline;
+        }
+        .help-close {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: none;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+            color: #6B7280;
+            padding: 0;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .help-close:hover {
+            color: #374151;
+        }
+        
+        /* Mobile responsiveness for help icon */
+        @media (max-width: 768px) {
+            .help-icon {
+                top: 15px;
+                right: 15px;
+                width: 35px;
+                height: 35px;
+                font-size: 16px;
+            }
+            .help-popup {
+                top: 60px;
+                right: 15px;
+                left: 15px;
+                max-width: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Help Icon -->
+    <div class="help-icon" onclick="toggleHelp()" title="Need help?">i</div>
+    
+    <!-- Help Popup -->
+    <div id="helpPopup" class="help-popup">
+        <button class="help-close" onclick="toggleHelp()">&times;</button>
+        <h4>Need Help?</h4>
+        <p>If you're having any trouble with the diagnostic tool, please don't hesitate to contact us:</p>
+        <p><a href="mailto:chris.kennedy22.mail@gmail.com">chris.kennedy22.mail@gmail.com</a></p>
+    </div>
+
+    <div class="container">
+        <div id="consentScreen" class="consent-screen">
+            <h2>Welcome to the Traction Hub Diagnostic Tool</h2>
+            <p>This tool helps you identify your true stage of development and focus on what matters most to move forward with clarity.</p>
+            
+            <div style="background: #f8fafc; border-radius: 12px; padding: 25px; margin: 30px 0; border: 1px solid #e5e7eb;">
+                <h3 style="color: #0D9488; margin: 0 0 20px 0; font-size: 1.3rem; text-align: center;">How it works (≈15 minutes):</h3>
+                <div style="display: grid; gap: 15px; margin: 20px 0;">
+                    <div style="display: flex; align-items: center; padding: 15px; background: white; border-radius: 8px; border-left: 4px solid #0D9488;">
+                        <div style="background: #0D9488; color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 15px; font-size: 14px;">1</div>
+                        <p style="margin: 0; color: #374151; font-size: 15px;">Answer quick, stage-setting questions about your startup.</p>
+                    </div>
+                    <div style="display: flex; align-items: center; padding: 15px; background: white; border-radius: 8px; border-left: 4px solid #0D9488;">
+                        <div style="background: #0D9488; color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 15px; font-size: 14px;">2</div>
+                        <p style="margin: 0; color: #374151; font-size: 15px;">The tool identifies your current stage in the startup journey.</p>
+                    </div>
+                    <div style="display: flex; align-items: center; padding: 15px; background: white; border-radius: 8px; border-left: 4px solid #0D9488;">
+                        <div style="background: #0D9488; color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 15px; font-size: 14px;">3</div>
+                        <p style="margin: 0; color: #374151; font-size: 15px;">You'll then be asked stage-specific questions that drill into the detail.</p>
+                    </div>
+                    <div style="display: flex; align-items: center; padding: 15px; background: white; border-radius: 8px; border-left: 4px solid #0D9488;">
+                        <div style="background: #0D9488; color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 15px; font-size: 14px;">4</div>
+                        <p style="margin: 0; color: #374151; font-size: 15px;">Get a clear roadmap showing what to tackle next.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="consent-details">
+                <h3>Data usage:</h3>
+                <p>Your responses are used to generate your personalised diagnostic report and may be stored securely for up to 12 months. We may share data with trusted service providers under strict confidentiality agreements. This tool complies with GDPR requirements for data processing. For full details, please review our Terms and Conditions & Privacy Policy.</p>
+                <p>By proceeding, you agree to our <a href="#" onclick="showTerms(); return false;" style="color: #10b981; text-decoration: none;">Terms and Conditions & Privacy Policy</a>.</p>
+                <p><a href="#" onclick="showFramework(); return false;" style="color: #10b981; text-decoration: none;">Learn more about our startup framework and stages</a></p>
+            </div>
+            
+            <div class="consent-buttons">
+                <button onclick="startForm()">Start Diagnostic</button>
+                <button onclick="resumeProgress()" id="resumeButton" style="display: none; background: #10B981; margin: 0 10px;">Resume Progress</button>
+                <button onclick="window.location.href='https://google.com'">Not Now</button>
+            </div>
+        </div>
+        
+        <div id="mainForm" class="hidden">
+            <h1>Startup Diagnostic - Initial Assessment</h1>
+            <div class="progress-bar"><div class="progress" id="progress" style="width: 0%"></div></div>
+            <form id="startupForm">
+                <!-- Steps will be injected here by JS -->
+            </form>
+            <div class="results hidden" id="results"></div>
+        </div>
+
+
+        <!-- Terms and Conditions Section -->
+        <div id="terms" style="display: none; max-width: 900px; margin: 0 auto; padding: 30px; background: white; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <h2 style="color: #0D9488; text-align: center; margin-bottom: 30px; font-size: 28px;">Terms and Conditions & Privacy Policy</h2>
+            <p style="text-align: center; color: #6B7280; margin-bottom: 40px; font-size: 16px;"><strong>Version 1.0 – September 2025</strong></p>
+            
+            <div style="line-height: 1.7; color: #374151; font-size: 14px;">
+                
+                <h3 style="color: #0D9488; margin-top: 30px; margin-bottom: 15px; font-size: 18px;">1. Data Controller Information</h3>
+                <p><strong>Controller:</strong> CHRIS K SOLUTIONS LTD, trading as 'Traction Hub' (Company No. 16352353)</p>
+                <p><strong>Registered Office:</strong> Flat 33 Ockham Building, 10 Limasol Street, London, England, SE16 3GE</p>
+                <p><strong>Contact:</strong> chris.kennedy22.mail@gmail.com</p>
+                <p><strong>Supervisory Authority:</strong> UK Information Commissioner's Office (ICO)</p>
+                
+                <h3 style="color: #0D9488; margin-top: 30px; margin-bottom: 15px; font-size: 18px;">2. Acceptance of Terms</h3>
+                <p>By accessing and using the Traction Hub startup diagnostic tool, you accept and agree to be bound by these terms and conditions, including our data processing practices as described herein. If you do not agree to these terms, please do not use this service.</p>
+                
+                <h3 style="color: #0D9488; margin-top: 30px; margin-bottom: 15px; font-size: 18px;">3. Description of Service</h3>
+                <p>We provide a comprehensive diagnostic assessment tool designed to evaluate startup performance and provide strategic recommendations. The service includes:</p>
+                <ul style="margin-left: 20px;">
+                    <li>Initial startup stage assessment (26 core questions)</li>
+                    <li>Stage-specific deep-dive questionnaires</li>
+                    <li>Performance analysis and scoring across multiple themes</li>
+                    <li>Strategic recommendations and roadmap generation</li>
+                    <li>Progress tracking and data export capabilities</li>
+                </ul>
+                
+                <h3 style="color: #0D9488; margin-top: 30px; margin-bottom: 15px; font-size: 18px;">4. Data We Collect and Process</h3>
+                <p><strong>Personal Data Categories:</strong></p>
+                <ul style="margin-left: 20px;">
+                    <li>Identity and contact information (name, email address)</li>
+                    <li>Company identifiers (company name, website URL)</li>
+                    <li>Diagnostic responses and business information</li>
+                    <li>Technical metadata (device information, IP address)</li>
+                </ul>
+                
+                <p><strong>Business/Diagnostic Data Categories:</strong></p>
+                <ul style="margin-left: 20px;">
+                    <li>Opportunity and solution descriptions</li>
+                    <li>Market analysis and competitive positioning</li>
+                    <li>Target customer profiles and market sizing</li>
+                    <li>Business model and revenue information</li>
+                    <li>Product readiness and development status</li>
+                    <li>Financial metrics (revenue, funding, runway)</li>
+                    <li>Team composition and capability assessments</li>
+                    <li>Go-to-market strategies and traction signals</li>
+                    <li>Strategic goals and risk assessments</li>
+                        </ul>
+                
+                <h3 style="color: #0D9488; margin-top: 30px; margin-bottom: 15px; font-size: 18px;">5. Purposes and Lawful Basis for Processing</h3>
+                <p><strong>Purposes:</strong></p>
+                <ul style="margin-left: 20px;">
+                    <li>Determine your startup stage and provide tailored assessments</li>
+                    <li>Generate personalised strategic recommendations and reports</li>
+                    <li>Communicate with you about your submission and deliver reports</li>
+                    <li>Improve our diagnostic tool using anonymised and aggregated insights</li>
+                    <li>Provide ongoing service and support</li>
+                </ul>
+                
+                <p><strong>Lawful Basis (UK/EU GDPR):</strong></p>
+                <ul style="margin-left: 20px;">
+                    <li><strong>Consent (Article 6(1)(a)):</strong> For collection and processing of questionnaire responses</li>
+                    <li><strong>Legitimate Interests (Article 6(1)(f)):</strong> For operating and improving the tool, aggregated analytics, and service communications</li>
+                    <li><strong>Contract (Article 6(1)(b)):</strong> Where a paid report or service is provided</li>
+                </ul>
+                
+                <h3 style="color: #0D9488; margin-top: 30px; margin-bottom: 15px; font-size: 18px;">6. Data Storage and Security</h3>
+                <p><strong>Storage Locations:</strong></p>
+                <ul style="margin-left: 20px;">
+                    <li>Local Excel files on password-protected UK devices with two-factor authentication</li>
+                    <li>Google Drive/Docs (servers in EU/US, safeguarded by Standard Contractual Clauses and UK Addendum)</li>
+                    <li>Gmail/Google Workspace for communications (safeguarded by SCCs and UK Addendum)</li>
+                </ul>
+                
+                <p><strong>Security Measures:</strong></p>
+                <ul style="margin-left: 20px;">
+                    <li>Access restricted to authorised personnel only</li>
+                    <li>Strong passwords and two-factor authentication on all accounts</li>
+                    <li>Encrypted transmission (HTTPS) for all data transfers</li>
+                    <li>Minimal local copies with documented deletion procedures</li>
+                    <li>Regular security reviews and access audits</li>
+                </ul>
+                
+                <h3 style="color: #0D9488; margin-top: 30px; margin-bottom: 15px; font-size: 18px;">7. Data Retention</h3>
+                <p>We retain your personal data for 12 months from the date of submission, unless you request earlier deletion. After this period, all identifiable data will be securely deleted. Anonymised and aggregated data may be retained for benchmarking and product improvement purposes.</p>
+                
+                <h3 style="color: #0D9488; margin-top: 30px; margin-bottom: 15px; font-size: 18px;">8. International Data Transfers</h3>
+                <p>Some of our service providers may process data outside the UK or EU (for example, in the United States). Where this occurs, we ensure appropriate safeguards are in place, including:</p>
+                <ul style="margin-left: 20px;">
+                    <li><strong>Adequacy decisions:</strong> UK or EU recognition that the country provides adequate protection</li>
+                    <li><strong>Standard Contractual Clauses (SCCs):</strong> Approved by the EU Commission or UK authorities</li>
+                    <li><strong>UK Addendum:</strong> Additional safeguards for UK data transfers</li>
+                </ul>
+                <p>All international transfers are conducted in accordance with UK/EU GDPR requirements and provide lawful and adequate protection for your data.</p>
+                
+                <h3 style="color: #0D9488; margin-top: 30px; margin-bottom: 15px; font-size: 18px;">9. Cookies and Local Storage</h3>
+                <p>We use browser local storage to save your progress through the diagnostic questionnaire. This allows you to continue where you left off if you need to pause the assessment. No tracking cookies are used. You can clear this data at any time through your browser settings.</p>
+                
+                <h3 style="color: #0D9488; margin-top: 30px; margin-bottom: 15px; font-size: 18px;">10. Automated Decision Making</h3>
+                <p>Our diagnostic tool uses automated scoring algorithms to assess your startup stage and generate theme scores. These decisions are based on your responses and are not subject to human review. You have the right to request human review of any automated decision that significantly affects you.</p>
+                
+                <h3 style="color: #0D9488; margin-top: 30px; margin-bottom: 15px; font-size: 18px;">11. Children's Data</h3>
+                <p>Our service is not intended for individuals under 16 years of age. We do not knowingly collect personal data from children under 16. If we become aware that we have collected personal data from a child under 16, we will take steps to delete such information immediately.</p>
+                
+                <h3 style="color: #0D9488; margin-top: 30px; margin-bottom: 15px; font-size: 18px;">12. Data Breach Notification</h3>
+                <p>In the unlikely event of a personal data breach that poses a risk to your rights and freedoms, we will notify the ICO within 72 hours and inform affected individuals without undue delay, in accordance with GDPR requirements.</p>
+                
+                <h3 style="color: #0D9488; margin-top: 30px; margin-bottom: 15px; font-size: 18px;">13. Your Data Protection Rights</h3>
+                <p>Under UK/EU GDPR, you have the following rights:</p>
+                <ul style="margin-left: 20px;">
+                    <li><strong>Right of Access:</strong> Request copies of your personal data</li>
+                    <li><strong>Right to Rectification:</strong> Request correction of inaccurate data</li>
+                    <li><strong>Right to Erasure:</strong> Request deletion of your personal data</li>
+                    <li><strong>Right to Restrict Processing:</strong> Request limitation of how we process your data</li>
+                    <li><strong>Right to Data Portability:</strong> Request transfer of your data to another service</li>
+                    <li><strong>Right to Object:</strong> Object to processing based on legitimate interests</li>
+                    <li><strong>Right to Withdraw Consent:</strong> Withdraw consent at any time where processing is based on consent</li>
+                </ul>
+                <p>To exercise any of these rights, please contact us at chris.kennedy22.mail@gmail.com. We will respond within 30 days.</p>
+                
+                <h3 style="color: #0D9488; margin-top: 30px; margin-bottom: 15px; font-size: 18px;">14. Who We Share Data With</h3>
+                <p>We share personal data only with:</p>
+                <ul style="margin-left: 20px;">
+                    <li><strong>Accelerators or institutions that invited you:</strong> They may act as data controllers in partnership arrangements (with written agreements defining data protection responsibilities)</li>
+                    <li><strong>Service providers (sub-processors) who help us deliver our services, including:</strong>
+                        <ul style="margin-left: 20px; margin-top: 10px;">
+                            <li>Google (cloud hosting, spreadsheets, storage, email services)</li>
+                            <li>Microsoft (email and productivity services)</li>
+                            <li>Other technical service providers under strict confidentiality agreements</li>
+                        </ul>
+                    </li>
+                    <li><strong>When required by law or to protect our rights</strong></li>
+                </ul>
+                <p><strong>Sub-processor Updates:</strong> If we add or replace sub-processors, we will update this list and, where required by law, notify clients of material changes.</p>
+                <p><strong>Aggregated Data:</strong> Anonymised and aggregated insights may be shared with partners for pilot evaluation purposes.</p>
+                
+                <h3 style="color: #0D9488; margin-top: 30px; margin-bottom: 15px; font-size: 18px;">15. User Obligations</h3>
+                <p>By using this service, you agree to:</p>
+                <ul style="margin-left: 20px;">
+                    <li>Provide accurate and truthful information</li>
+                    <li>Use the service for legitimate business purposes only</li>
+                    <li>Not attempt to reverse engineer or copy the service</li>
+                    <li>Respect intellectual property rights</li>
+                    <li>Not submit special category data or children's data</li>
+                </ul>
+                
+                <h3 style="color: #0D9488; margin-top: 30px; margin-bottom: 15px; font-size: 18px;">16. Intellectual Property</h3>
+                <p>All content, features, and functionality of this diagnostic tool are owned by CHRIS K SOLUTIONS LTD and are protected by international copyright, trademark, and other intellectual property laws. You may not reproduce, distribute, or create derivative works without our express written permission.</p>
+                
+                <h3 style="color: #0D9488; margin-top: 30px; margin-bottom: 15px; font-size: 18px;">17. Limitation of Liability</h3>
+                <p>This diagnostic tool is provided "as is" without warranties of any kind. We shall not be liable for any indirect, incidental, special, consequential, or punitive damages arising from your use of the service. Our total liability shall not exceed the amount you have paid for the service, if any.</p>
+                
+                <h3 style="color: #0D9488; margin-top: 30px; margin-bottom: 15px; font-size: 18px;">18. Termination</h3>
+                <p>We may terminate or suspend access to our service immediately, without prior notice, for any reason whatsoever, including breach of these terms. Upon termination, your right to use the service will cease immediately.</p>
+                
+                <h3 style="color: #0D9488; margin-top: 30px; margin-bottom: 15px; font-size: 18px;">19. Changes to Terms</h3>
+                <p>We reserve the right to modify these terms at any time. We will notify users of any material changes via email or through the service. Your continued use of the service after such modifications constitutes acceptance of the updated terms.</p>
+                
+                <h3 style="color: #0D9488; margin-top: 30px; margin-bottom: 15px; font-size: 18px;">20. Governing Law and Jurisdiction</h3>
+                <p>These terms shall be governed by and construed in accordance with the laws of England and Wales. Any disputes arising from these terms or your use of the service shall be subject to the exclusive jurisdiction of the courts of England and Wales.</p>
+                
+                <h3 style="color: #0D9488; margin-top: 30px; margin-bottom: 15px; font-size: 18px;">21. Contact Information</h3>
+                <p>If you have any questions about these Terms and Conditions or our data processing practices, please contact us:</p>
+                <p><strong>Email:</strong> chris.kennedy22.mail@gmail.com</p>
+                <p><strong>Address:</strong> CHRIS K SOLUTIONS LTD, Flat 33 Ockham Building, 10 Limasol Street, London, England, SE16 3GE</p>
+                
+                <div style="background: #f8fafc; border-left: 4px solid #0D9488; padding: 20px; margin-top: 30px; border-radius: 4px;">
+                    <p style="margin: 0; font-size: 13px; color: #6B7280;"><strong>Last Updated:</strong> 15 September 2025</p>
+                    <p style="margin: 5px 0 0 0; font-size: 13px; color: #6B7280;">This document is reviewed annually and updated as necessary to reflect changes in our processing activities or legal requirements.</p>
+            </div>
+            </div>
+            
+            <div style="text-align: center; margin-top: 40px;">
+                <button onclick="showMainContent()" style="background: #0D9488; color: white; border: none; padding: 15px 30px; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 600;">Back to Diagnostic</button>
+            </div>
+        </div>
+
+        <!-- Framework Section -->
+        <div id="framework" style="display: none; max-width: 800px; margin: 0 auto; padding: 40px; background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
+            <h2 style="color: #0D9488; text-align: center; margin-bottom: 20px; font-size: 2rem; font-weight: 600;">The Traction Hub Framework</h2>
+            <p style="text-align: center; color: #6B7280; margin-bottom: 40px; font-size: 1rem; line-height: 1.6; max-width: 600px; margin-left: auto; margin-right: auto;">
+                Startups rarely fail for lack of ideas — they fail when execution loses focus. The Traction Hub Diagnostic is designed to filter out the noise, prioritise what matters for your stage, and help you move forward with clarity.
+            </p>
+            
+            <!-- The Framework Behind It -->
+            <div style="margin: 30px 0;">
+                <h3 style="color: #0D9488; margin: 0 0 20px 0; font-size: 1.3rem; text-align: center;">The framework behind it</h3>
+                <p style="color: #374151; font-size: 15px; line-height: 1.6; margin: 0 0 25px 0; text-align: center;">
+                    The diagnostic is built on the Startup Development Stage Framework and refined through years of hands-on work with founders, accelerators, and investors.
+                </p>
+                
+                <div style="display: grid; gap: 15px; margin: 25px 0;">
+                    <div style="background: #f8fafc; border-left: 3px solid #0D9488; padding: 15px; border-radius: 6px;">
+                        <h4 style="color: #0D9488; margin: 0 0 5px 0; font-size: 1rem; font-weight: 600;">Ideation</h4>
+                        <p style="color: #374151; margin: 0; font-size: 14px;">Shape the opportunity, problem definition, and initial solution.</p>
+                    </div>
+                    <div style="background: #f8fafc; border-left: 3px solid #F59E0B; padding: 15px; border-radius: 6px;">
+                        <h4 style="color: #F59E0B; margin: 0 0 5px 0; font-size: 1rem; font-weight: 600;">Validation</h4>
+                        <p style="color: #374151; margin: 0; font-size: 14px;">Test assumptions, prove early demand, and gather evidence of fit.</p>
+                    </div>
+                    <div style="background: #f8fafc; border-left: 3px solid #10B981; padding: 15px; border-radius: 6px;">
+                        <h4 style="color: #10B981; margin: 0 0 5px 0; font-size: 1rem; font-weight: 600;">Early Traction</h4>
+                        <p style="color: #374151; margin: 0; font-size: 14px;">Demonstrate repeatable signals of growth across customers, revenue, or engagement.</p>
+                    </div>
+                    <div style="background: #f8fafc; border-left: 3px solid #3B82F6; padding: 15px; border-radius: 6px;">
+                        <h4 style="color: #3B82F6; margin: 0 0 5px 0; font-size: 1rem; font-weight: 600;">Growth</h4>
+                        <p style="color: #374151; margin: 0; font-size: 14px;">Scale delivery, go-to-market, and team operations with increasing discipline.</p>
+                    </div>
+                    <div style="background: #f8fafc; border-left: 3px solid #8B5CF6; padding: 15px; border-radius: 6px;">
+                        <h4 style="color: #8B5CF6; margin: 0 0 5px 0; font-size: 1rem; font-weight: 600;">Scale</h4>
+                        <p style="color: #374151; margin: 0; font-size: 14px;">Expand with resilience, data-driven decision-making, and robust operations.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- How It Works -->
+            <div style="background: #f8fafc; border-radius: 12px; padding: 25px; margin: 30px 0; border: 1px solid #e5e7eb;">
+                <h3 style="text-align: center; margin: 0 0 20px 0; font-size: 1.3rem; color: #0D9488;">How it works (≈15 minutes)</h3>
+                <div style="display: grid; gap: 15px; margin: 20px 0;">
+                    <div style="display: flex; align-items: center; padding: 15px; background: white; border-radius: 8px; border-left: 3px solid #0D9488;">
+                        <div style="background: #0D9488; color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 15px; font-size: 14px;">1</div>
+                        <div>
+                            <h4 style="margin: 0 0 5px 0; font-size: 1rem; font-weight: 600; color: #0D9488;">Stage-setting</h4>
+                            <p style="margin: 0; font-size: 14px; color: #374151;">Answer quick questions to establish a baseline across model, traction, team, and funding.</p>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; padding: 15px; background: white; border-radius: 8px; border-left: 3px solid #0D9488;">
+                        <div style="background: #0D9488; color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 15px; font-size: 14px;">2</div>
+                        <div>
+                            <h4 style="margin: 0 0 5px 0; font-size: 1rem; font-weight: 600; color: #0D9488;">Stage identified</h4>
+                            <p style="margin: 0; font-size: 14px; color: #374151;">The diagnostic places you at the right point in the journey (Ideation → Scale).</p>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; padding: 15px; background: white; border-radius: 8px; border-left: 3px solid #0D9488;">
+                        <div style="background: #0D9488; color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 15px; font-size: 14px;">3</div>
+                        <div>
+                            <h4 style="margin: 0 0 5px 0; font-size: 1rem; font-weight: 600; color: #0D9488;">Stage-specific deep dive</h4>
+                            <p style="margin: 0; font-size: 14px; color: #374151;">Questions that drill into the detail that matters for your stage — not a long, generic checklist.</p>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; padding: 15px; background: white; border-radius: 8px; border-left: 3px solid #0D9488;">
+                        <div style="background: #0D9488; color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 15px; font-size: 14px;">4</div>
+                        <div>
+                            <h4 style="margin: 0 0 5px 0; font-size: 1rem; font-weight: 600; color: #0D9488;">Action roadmap</h4>
+                            <p style="margin: 0; font-size: 14px; color: #374151;">You'll receive a tailored set of priorities to focus on next, in the right order.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- What You Get -->
+            <div style="margin: 30px 0;">
+                <h3 style="color: #0D9488; margin: 0 0 20px 0; font-size: 1.3rem; text-align: center;">What you get</h3>
+                <div style="display: grid; gap: 12px; margin: 20px 0;">
+                    <div style="display: flex; align-items: center; padding: 12px; background: #f8fafc; border-radius: 6px; border-left: 3px solid #0D9488;">
+                        <div style="background: #0D9488; color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 12px; font-size: 12px;">✓</div>
+                        <p style="margin: 0; color: #374151; font-size: 14px;">A snapshot of your current stage</p>
+                    </div>
+                    <div style="display: flex; align-items: center; padding: 12px; background: #f8fafc; border-radius: 6px; border-left: 3px solid #0D9488;">
+                        <div style="background: #0D9488; color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 12px; font-size: 12px;">✓</div>
+                        <p style="margin: 0; color: #374151; font-size: 14px;">A clear, stage-aligned roadmap of near-term priorities</p>
+                    </div>
+                    <div style="display: flex; align-items: center; padding: 12px; background: #f8fafc; border-radius: 6px; border-left: 3px solid #0D9488;">
+                        <div style="background: #0D9488; color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 12px; font-size: 12px;">✓</div>
+                        <p style="margin: 0; color: #374151; font-size: 14px;">Specific areas that may be holding you back, with guidance on next steps</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- What Happens Next -->
+            <div style="background: #f0fdf4; border-radius: 12px; padding: 25px; margin: 30px 0; border: 1px solid #10B981;">
+                <h3 style="text-align: center; margin: 0 0 15px 0; font-size: 1.3rem; color: #0D9488;">What happens next</h3>
+                <p style="text-align: center; margin: 0; font-size: 16px; line-height: 1.6; color: #374151;">
+                    After you submit the diagnostic, our team reviews your responses and follows up within 48 hours with your tailored recommendations.
+                </p>
+            </div>
+            
+            <div style="text-align: center; margin-top: 30px;">
+                <button onclick="showMainContent()" style="background: #0D9488; color: white; border: none; padding: 15px 30px; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 600; box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3);">Home</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        let currentStep = 1;
+        let totalSteps = 26;
+        let answers = {};
+        let stageResult = {};
+        let stageSpecificAnswers = {};
+        let currentStageStep = 1;
+        let totalStageSteps = 0;
+        let isProgressSaved = false;
+
+        // Progress saving functions
+        function saveProgress() {
+            const progressData = {
+                currentStep: currentStep,
+                answers: answers,
+                stageResult: stageResult,
+                stageSpecificAnswers: stageSpecificAnswers,
+                currentStageStep: currentStageStep,
+                totalStageSteps: totalStageSteps,
+                timestamp: new Date().toISOString()
+            };
+            
+            localStorage.setItem('startupDiagnosticProgress', JSON.stringify(progressData));
+            isProgressSaved = true;
+            
+            // Only show notification on first save or every 5 steps to reduce annoyance
+            if (currentStep === 1 || currentStep % 5 === 0) {
+                showSaveMessage('Progress automatically saved', 'success');
+            }
+        }
+
+        function loadProgress() {
+            const savedProgress = localStorage.getItem('startupDiagnosticProgress');
+            if (savedProgress) {
+                try {
+                    const progressData = JSON.parse(savedProgress);
+                    currentStep = progressData.currentStep || 1;
+                    answers = progressData.answers || {};
+                    stageResult = progressData.stageResult || {};
+                    stageSpecificAnswers = progressData.stageSpecificAnswers || {};
+                    currentStageStep = progressData.currentStageStep || 1;
+                    totalStageSteps = progressData.totalStageSteps || 0;
+                    
+                    // Show load confirmation
+                    showSaveMessage('Previous progress loaded!', 'success');
+                    return true;
+                } catch (error) {
+                    console.error('Error loading progress:', error);
+                    return false;
+                }
+            }
+            return false;
+        }
+
+        function clearProgress() {
+            localStorage.removeItem('startupDiagnosticProgress');
+            isProgressSaved = false;
+        }
+
+        function resumeProgress() {
+            console.log('Resume progress clicked');
+            if (loadProgress()) {
+                console.log('Progress loaded successfully. Current step:', currentStep);
+                // Hide consent screen and show form
+                document.getElementById('consentScreen').style.display = 'none';
+                document.getElementById('mainForm').style.display = 'block';
+                
+                // If we're in stage-specific questions, show those
+                if (stageResult.stage && Object.keys(stageSpecificAnswers).length > 0) {
+                    console.log('Resuming stage-specific questions');
+                    startStageQuestions();
+                } else if (stageResult.stage) {
+                    console.log('Resuming stage questions (no answers yet)');
+                    startStageQuestions();
+                } else {
+                    console.log('Resuming initial questions at step:', currentStep);
+                    // We're still in the initial 26 questions
+                    initializeForm();
+                    showStep(currentStep);
+                }
+            } else {
+                alert('No saved progress found. Please start a new assessment.');
+            }
+        }
+
+        function checkForSavedProgress() {
+            const savedProgress = localStorage.getItem('startupDiagnosticProgress');
+            if (savedProgress) {
+                try {
+                    const progressData = JSON.parse(savedProgress);
+                    const resumeButton = document.getElementById('resumeButton');
+                    if (resumeButton) {
+                        resumeButton.style.display = 'inline-block';
+                        resumeButton.textContent = `Resume Progress (Step ${progressData.currentStep || 1})`;
+                    }
+                } catch (error) {
+                    console.error('Error checking saved progress:', error);
+                }
+            }
+        }
+
+        function showSaveMessage(message, type = 'info') {
+            const messageDiv = document.createElement('div');
+            messageDiv.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 8px 16px;
+                border-radius: 6px;
+                color: white;
+                font-weight: 500;
+                font-size: 14px;
+                z-index: 1000;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                transition: all 0.3s ease;
+                ${type === 'success' ? 'background: #10b981;' : 'background: #3b82f6;'}
+            `;
+            messageDiv.textContent = message;
+            document.body.appendChild(messageDiv);
+            
+            setTimeout(() => {
+                messageDiv.style.opacity = '0';
+                setTimeout(() => document.body.removeChild(messageDiv), 300);
+            }, 1500);
+        }
+
+        // Auto-save progress every 30 seconds (silent)
+        setInterval(() => {
+            if (Object.keys(answers).length > 0) {
+                const progressData = {
+                    currentStep: currentStep,
+                    answers: answers,
+                    stageResult: stageResult,
+                    stageSpecificAnswers: stageSpecificAnswers,
+                    currentStageStep: currentStageStep,
+                    totalStageSteps: totalStageSteps,
+                    timestamp: new Date().toISOString()
+                };
+                localStorage.setItem('startupDiagnosticProgress', JSON.stringify(progressData));
+                isProgressSaved = true;
+            }
+        }, 30000);
+
+        // All 26 questions in ORIGINAL ORDER with mandatory fields marked
+        const questions = [
+            { id: 1, label: "Founder Name", name: "founderName", type: "text", placeholder: "e.g. John Smith", required: true },
+            { id: 2, label: "Email", name: "email", type: "email", placeholder: "e.g. john@company.com", required: true },
+            { id: 3, label: "Company Name", name: "companyName", type: "text", placeholder: "e.g. TechStart Ltd", required: true },
+            { id: 4, label: "Company Website", name: "companyWebsite", type: "url", placeholder: "https://yourcompany.com" },
+            { id: 5, label: "In a few sentences, describe the opportunity and how your solution is best placed to address it?", name: "opportunitySolution", type: "textarea", placeholder: "Describe your opportunity and solution..." },
+            { id: 6, label: "Why is now the right time to build the solution?", name: "whyNow", type: "textarea", placeholder: "Explain why now is the right time..." },
+            { id: 7, label: "How clearly have you defined your target market and competitive edge at this stage?", name: "marketSizing", type: "select", options: [
+                "We're still exploring — haven't clearly defined our target market or competitors yet.",
+                "We have a rough idea of our target market and early signs of competitor activity.",
+                "We've completed TAM/SAM/SOM sizing and identified key competitors.",
+                "We have TAM/SAM/SOM + clear articulation of how we differ from existing solutions.",
+                "We deeply understand market dynamics, supported by robust TAM/SAM/SOM + competitor analysis."
+            ]},
+            { id: 8, label: "Who is your target customer/user? Why are they a good fit for your solution?", name: "targetCustomer", type: "textarea", placeholder: "Describe your target customer..." },
+            { id: 9, label: "How many paying customers or active users do you currently have?", name: "customers", type: "number", placeholder: "e.g. 25", required: true },
+            { id: 10, label: "Roughly what % of your current customers or users are actively engaging with the product at least monthly?", name: "engagementQuality", type: "select", options: [
+                "Not applicable", "Less than 10%", "10–30%", "30–60%", "Over 60%"
+            ], required: true },
+            { id: 11, label: "How are you currently acquiring your customers?", name: "goToMarket", type: "select", options: [
+                "Haven't started acquiring yet", "Founder-led outreach or referrals", "Word of mouth / organic demand",
+                "Paid marketing or ads", "Partnerships / channel sales", "Dedicated sales team or GTM function"
+            ], required: true },
+            { id: 12, label: "What best describes your primary business model?", name: "businessModel", type: "select", options: [
+                "B2B (selling to businesses)", "B2C (selling to consumers)", "B2G (selling to government)",
+                "Marketplace (buyers & sellers)", "Direct-to-Consumer (D2C)", "Subscription (e.g., SaaS)",
+                "Consumer App", "Other (please specify)"
+            ], required: true },
+            { id: 13, label: "Which region is your company primarily operating in?", name: "region", type: "select", options: [
+                "North America (US, Canada)", "Western Europe (e.g. UK, Germany, France, Nordics etc.)",
+                "Australia & New Zealand", "Central & Eastern Europe", "Latin America", "Sub-Saharan Africa",
+                "Middle East & North Africa (MENA)", "South Asia (e.g. India, Pakistan)",
+                "Southeast Asia (e.g. Indonesia, Vietnam, Philippines)", "East Asia (e.g. China, Japan, Korea, Singapore)", "Other (please specify)"
+            ], required: true },
+            { id: 14, label: "Which category best describes your business type?", name: "businessType", type: "select", options: [
+                "SaaS (Software as a Service)", "Marketplace (connecting buyers/sellers)", "E-commerce / DTC",
+                "Hardware / Devices", "Services (e.g. consulting, agency)", "Platform / API-based",
+                "Community or Content-led", "Other (please specify)"
+            ], required: true },
+            { id: 15, label: "What industry are you in?", name: "industry", type: "select", options: [
+                "Software / SaaS", "Fintech / Insurtech", "Health / MedTech", "E-commerce / DTC",
+                "Deep Tech / AI / Robotics", "Education / EdTech", "Social Impact / Nonprofit", "Other (please specify)"
+            ], required: true },
+            { id: 16, label: "What best describes the current state of your product?", name: "productReadiness", type: "select", options: [
+                "Idea or concept only", "Wireframes / mockups", "MVP built (not in use)",
+                "MVP being tested with early users", "Live product with active users",
+                "Fully launched and scaled", "Not applicable / unknown"
+            ], required: true },
+            { id: 17, label: "What is your total revenue in the past 12 months (USD)?", name: "revenue", type: "number", placeholder: "e.g. 25000", required: true },
+            { id: 18, label: "How many months of runway do you currently have based on your cash on hand and current burn?", name: "runway", type: "number", placeholder: "e.g. 6", step: "0.5", required: true },
+            { id: 19, label: "How much funding have you raised to date (USD)?", name: "funding", type: "number", placeholder: "e.g. 100000", required: true },
+            { id: 20, label: "Which of the following additional signals of traction or customer validation has your business achieved? (Select all that apply)", name: "tractionSignals", type: "checkbox", options: [
+                "Pilot or beta programme completed with users", "Active user or customer engagement",
+                "Signed commercial or strategic agreements (LOIs, MOUs, etc.)", "Channel partner actively generating leads",
+                "10+ customer discovery interviews or UX tests", "Validation that changed product or GTM direction",
+                "Qualified waitlist with warm intent", "Inbound partner or ecosystem interest",
+                "Press, analyst, or ecosystem recognition", "Funnel metrics actively tracked", "None of the above"
+            ]},
+            { id: 21, label: "Outline the backgrounds of the founders in your business. Why are you best placed to make this solution work?", name: "founderProfiles", type: "textarea", placeholder: "Describe founder backgrounds and fit..." },
+            { id: 22, label: "Including founders, how many people are currently on your team (full-time equivalents)?", name: "teamSize", type: "number", placeholder: "e.g. 3", min: "1", required: true },
+            { id: 23, label: "What's the story behind how you started working on this business?", name: "teamStory", type: "textarea", placeholder: "Tell the story of how you started..." },
+            { id: 24, label: "How are you currently identifying and addressing key risks or assumptions in the business?", name: "risksAssumptions", type: "select", options: [
+                "We've started thinking through key risks and assumptions but haven't formalised anything yet.",
+                "We've identified a few major assumptions (e.g. demand, pricing, team), and are working out how to test them.",
+                "We're actively testing high-risk assumptions through user feedback, pilots, or experiments.",
+                "We've validated core assumptions and now track remaining risks with basic systems or tools.",
+                "We've built a systematic approach to monitoring and mitigating risks across functions (e.g. ops, product, compliance)."
+            ]},
+            { id: 25, label: "What goals are you looking to achieve over the coming 6 months with your business?", name: "goals", type: "checkbox", options: [
+                "Launch a product or MVP with early users", "Test and validate solution with real users",
+                "Acquire early customers or drive growth", "Raise investment", "Make key hires or build out the team",
+                "Improve financial planning or extend runway", "Understand my ideal customer or positioning", "Other (please specify)"
+            ]},
+            { id: 26, label: "Anything else you think we should know about your business at this time?", name: "otherInformation", type: "textarea", placeholder: "Any additional information..." }
+        ];
+
+        // Theme mapping for framework alignment (Framework V2 structure)
+
+        // Stage-specific questions
+        const stageQuestions = {
+            "Ideation": [
+                // 🧭 Opportunity & Solution Theme
+                { label: "How clearly have you identified and validated the specific customer need, pain point, or market opportunity you're addressing?", name: "ideation_core_opportunity", type: "select", options: [
+                    "We haven't clearly identified a specific customer need or opportunity yet.",
+                    "We have a general idea of the problem but haven't validated it with customers.",
+                    "We've identified a potential opportunity but need to validate its significance.",
+                    "We've validated that customers experience this issue and it's worth solving.",
+                    "We have clear evidence that this is a significant, validated opportunity with strong customer demand."
+                ]},
+                { label: "How well have you defined how your solution addresses the identified opportunity or problem?", name: "ideation_proposed_solution", type: "select", options: [
+                    "We haven't clearly defined our solution approach yet.",
+                    "We have a basic solution concept but haven't tested its fit.",
+                    "We've outlined our solution but need to validate it addresses the problem effectively.",
+                    "We've tested our solution concept and refined it based on customer feedback.",
+                    "We have a clearly defined solution that directly addresses the validated problem with evidence of customer fit."
+                ]},
+                { label: "How well can you justify why now is the right time to build this solution?", name: "ideation_timing_market_readiness", type: "select", options: [
+                    "We haven't considered market timing or readiness factors yet.",
+                    "We think the timing might be right but haven't researched supporting factors.",
+                    "We've identified some market shifts or changes that support our timing.",
+                    "We have clear evidence of market readiness and timing factors.",
+                    "We can demonstrate strong market timing with technological, regulatory, or market shift evidence."
+                ]},
+                // 👥 Customer Theme
+                { label: "Which of the following best describes how you've defined and validated your initial customer segment?", name: "ideation_customer_profile", type: "select", options: [
+                    "We haven't clearly defined our target customers yet.",
+                    "We have a rough idea of who our customers might be, but haven't tested it.",
+                    "We've had informal conversations with some potential customers.",
+                    "We've conducted structured discovery with real potential customers and refined our understanding.",
+                    "We have a clearly defined customer profile based on patterns validated through discovery conversations."
+                ]},
+                // 🏁 Market and Competition Theme
+                { label: "How well have you estimated your Total Addressable Market (TAM), Serviceable Addressable Market (SAM), and Serviceable Obtainable Market (SOM)?", name: "ideation_market_sizing", type: "select", options: [
+                    "We haven't done any market sizing analysis yet.",
+                    "We have rough estimates but haven't validated them with research.",
+                    "We've completed basic TAM/SAM/SOM analysis with some supporting data.",
+                    "We have well-researched market sizing with validated assumptions.",
+                    "We have comprehensive market sizing with multiple data sources and clear market entry strategy."
+                ]},
+                { label: "How clearly have you identified key competitors and articulated your competitive differentiation?", name: "ideation_competitor_mapping", type: "select", options: [
+                    "We haven't identified or analysed our competitors yet.",
+                    "We know who some competitors are but haven't analysed their positioning.",
+                    "We've mapped competitors but need to clarify our differentiation.",
+                    "We have clear competitive analysis and understand our unique positioning.",
+                    "We have comprehensive competitive intelligence and clear differentiation strategy."
+                ]},
+                // 🧪 Product & Experience Theme
+                { label: "How clearly have you defined what your MVP needs to include — and why those features matter?", name: "ideation_mvp_scope", type: "select", options: [
+                    "We haven't defined our MVP features or scope yet.",
+                    "We've listed ideas, but haven't prioritised or linked them to the problem.",
+                    "We have a rough MVP scope based on assumptions, not user input.",
+                    "We've defined core features based on problem-solution fit and feasibility.",
+                    "We've scoped our MVP tightly with a clear reason for each feature."
+                ]},
+                { label: "How well-defined is your business model at this stage?", name: "ideation_business_model", type: "select", options: [
+                    "We haven't focused on the business model yet.",
+                    "We have a broad idea, but haven't defined what we're selling or how it generates revenue.",
+                    "We're still exploring different business model options or customer segments.",
+                    "We have an initial business model and revenue logic, but still need to validate key assumptions.",
+                    "We have a clear business model – we know what we're selling, who pays, how they pay, and how it scales."
+                ]},
+                { label: "How would you describe your current thinking around how to reach your early users or customers?", name: "ideation_gtm_thinking", type: "select", options: [
+                    "We haven't thought much about GTM yet.",
+                    "We have some rough GTM ideas but they're untested.",
+                    "We've identified potential channels and pricing strategies to explore.",
+                    "We've mapped early GTM hypotheses and started outlining experiments.",
+                    "We have a clear GTM concept and a few experiments ready to test."
+                ]},
+                { label: "How well-positioned is your current team to deliver on the technical and product execution needed at this stage?", name: "ideation_team_technical", type: "select", options: [
+                    "No one has relevant technical experience or product execution history.",
+                    "One founder has some technical/product exposure.",
+                    "Some relevant experience, but light in delivery track record.",
+                    "Strong technical/product capability in-house.",
+                    "Deep, proven experience building and launching similar products."
+                ]},
+                { label: "How well-positioned is your current team to deliver on the commercial and go-to-market execution needed at this stage?", name: "ideation_team_commercial", type: "select", options: [
+                    "No commercial, sales, or growth experience in the team.",
+                    "Some exposure to customer engagement or pitching.",
+                    "One founder has decent experience in sales or marketing.",
+                    "Clear experience driving early GTM or commercial traction.",
+                    "Deep experience scaling early-stage GTM strategies."
+                ]},
+                { label: "How clearly have you defined your fundraising goals and demonstrated why you're ready to raise?", name: "ideation_fundraising_readiness", type: "select", options: [
+                    "Funding is not a priority for our business model at this stage.",
+                    "No clear funding need, unclear investor type or use of funds.",
+                    "Vague understanding of funding need, minimal clarity on use of funds.",
+                    "Funding target loosely defined, early sense of investor type and use.",
+                    "Clear fundraising goal with identified investor type and planned use."
+                ]},
+                { label: "How clearly have you mapped out your near-term goals, milestones, and ways to track progress?", name: "ideation_milestones_progress", type: "select", options: [
+                    "No milestones or future planning yet.",
+                    "General ideas, but no clear timelines or owners.",
+                    "Clear goals for next 2–3 months.",
+                    "Defined milestones with timelines.",
+                    "Shared roadmap with stakeholders and tracking in place."
+                ]}
+            ],
+            "Validation": [
+                // 🧭 Opportunity & Solution Theme
+                { label: "How have you validated that your solution addresses a real user need?", name: "validation_solution_value", type: "select", options: [
+                    "We've tested the solution with real users and can show strong engagement, retention, or conversion metrics.",
+                    "We've received direct feedback from users confirming the value of our solution.",
+                    "We've seen repeat usage or buying intent from early users.",
+                    "We've conducted informal testing or pilots but haven't gathered structured evidence yet.",
+                    "We haven't tested the solution with real users yet."
+                ]},
+                { label: "How would you describe the way potential customers are engaging with your solution or problem space?", name: "validation_icp_behaviour", type: "select", options: [
+                    "We've had no meaningful engagement from potential customers yet.",
+                    "We've had early chats but no strong evidence of interest.",
+                    "A few have shown interest but it's inconsistent or unclear.",
+                    "We're seeing repeated interest or intent signals from a clear profile.",
+                    "We have strong and consistent behavioural signals that align with our ICP."
+                ]},
+                { label: "How well do you understand which segments and channels are gaining the most traction — and how your offering compares to competitors?", name: "validation_segment_traction", type: "select", options: [
+                    "We've done little to no tracking of segments, channels, or competitors yet.",
+                    "We've seen some early signs of traction in certain segments or channels, but haven't dug deep.",
+                    "We've started analysing which segments or channels work, and have noted some competitor patterns.",
+                    "We have a solid handle on which segments and channels are performing, with some competitor insight.",
+                    "We have deep insight into segment traction, channel effectiveness, and how we're positioned vs competitors."
+                ]},
+                // 🧪 Product & Experience Theme
+                { label: "What have you learned from MVP testing — and how ready are you to deliver and support it at scale?", name: "validation_mvp_testing", type: "select", options: [
+                    "We haven't tested the MVP yet, or it's too early to assess.",
+                    "We've started basic testing, but key usability issues and delivery risks remain unresolved.",
+                    "We've run some user testing and made basic improvements, but delivery systems still need work.",
+                    "We've refined the MVP based on testing and have a clear roadmap for delivery and support.",
+                    "MVP is well-tested with improvements made, and we're confident in our ability to deliver and support at scale."
+                ]},
+                { label: "How ready are you to deliver your product at scale from a technical and operational standpoint?", name: "validation_product_delivery_readiness", type: "select", options: [
+                    "We haven't assessed our technical or operational readiness for scale yet.",
+                    "We've identified major technical or operational gaps that need addressing.",
+                    "We've started addressing key technical or operational challenges.",
+                    "We have most technical and operational systems in place for scale.",
+                    "We're fully prepared technically and operationally to deliver at scale."
+                ]},
+                { label: "How well-positioned are your internal systems and workflows to support broader scale?", name: "validation_tech_ops_readiness", type: "select", options: [
+                    "We haven't assessed our internal systems or workflow readiness.",
+                    "We have major gaps in our internal systems or workflows.",
+                    "We've identified key system or workflow improvements needed.",
+                    "We have most internal systems and workflows ready for scale.",
+                    "Our internal systems and workflows are fully optimised for scale."
+                ]},
+                { label: "How would you describe the experiments or strategies you've tested to find effective ways to reach your customers?", name: "validation_gtm_experimentation", type: "select", options: [
+                    "We haven't run any GTM experiments yet.",
+                    "We've run a few GTM tests but haven't learned much.",
+                    "Some GTM experiments have shown promising signals.",
+                    "We're seeing patterns around what works in messaging or channels.",
+                    "We have clear learnings guiding our GTM strategy."
+                ]},
+                { label: "How would you describe the user behaviour or traction signals you're currently seeing — and what they indicate?", name: "validation_traction_signals", type: "select", options: [
+                    "We haven't seen meaningful engagement or usage patterns yet.",
+                    "We've seen isolated user activity but not enough to identify a pattern.",
+                    "Some early traction is emerging but it's unclear what it means.",
+                    "We're seeing repeated usage or behaviours that align with our problem-solution fit.",
+                    "We have consistent traction signals that clearly validate product–market alignment."
+                ]},
+                { label: "Where do you currently stand in identifying and addressing key capability gaps (e.g. tech, marketing, operations)?", name: "validation_resource_gaps", type: "select", options: [
+                    "We have major capability gaps and no clear plan to fill them.",
+                    "We know we're missing key skills, but only starting to figure out next steps.",
+                    "Some gaps exist, and we're loosely working on them.",
+                    "Minor gaps remain — we've prioritised key hires or solutions.",
+                    "We've mapped resourcing needs clearly and are actively filling them."
+                ]},
+                { label: "Beyond your current revenue, have you mapped out a clear financial plan for growth — including your projected revenue, funding use, and any early signs of efficiency?", name: "validation_financial_planning", type: "select", options: [
+                    "No financial projections or plans for funding use yet.",
+                    "Basic ideas exist but unclear or disconnected from goals.",
+                    "Have started modeling revenue and planning use of funds, but still rough.",
+                    "Revenue projections and funding plan are defined with some tested assumptions.",
+                    "Clear financial model with 12–18 month projections, allocation plan, and early efficiency metrics (CAC, payback)."
+                ]},
+                { label: "How well prepared are you for raising your next round of funding? (Consider your pitch narrative, investor profile, funding goals, and supporting materials.)", name: "validation_fundraising_preparation", type: "select", options: [
+                    "We haven't defined a narrative or target investor profile yet.",
+                    "We've drafted a basic narrative but haven't tested or refined it.",
+                    "We have a clear narrative and pitch, but still identifying the right investors.",
+                    "We've defined our investor profile and have supporting pitch materials ready.",
+                    "We're actively engaging investors with a strong, tested narrative and clear ask."
+                ]},
+                { label: "How clearly have you defined your early targets (e.g. users, revenue, engagement) — and tested the assumptions that matter most right now (like demand or pricing)?", name: "validation_risk_assumption_review", type: "select", options: [
+                    "We haven't defined clear targets or tested key assumptions yet.",
+                    "We've defined a few targets, but they're vague and assumptions are mostly untested.",
+                    "We've defined specific goals, and have started testing key assumptions.",
+                    "Our targets are clear and based on structured assumption testing (e.g. pricing, demand).",
+                    "We've validated core assumptions and use our targets to guide focused execution."
+                ]}
+            ],
+            "Early Traction": [
+                // 👥 Customer Theme
+                { label: "How would you describe your understanding of how customers are using and staying engaged with your product or service?", name: "early_traction_customer_retention", type: "select", options: [
+                    "We don't yet track how customers use or stay with our product.",
+                    "We occasionally review some usage data but it's not consistent.",
+                    "We have basic retention or usage data but limited analysis.",
+                    "We track usage and retention systematically and review patterns.",
+                    "We have a clear view of retention trends and identify expansion signals."
+                ]},
+                { label: "Which customer segments are showing the strongest traction, and how are you responding to competitive shifts or market demand signals?", name: "early_traction_market_signals", type: "select", options: [
+                    "We haven't identified clear pull from any segment yet.",
+                    "Some signs of interest from certain segments, but it's early and inconsistent.",
+                    "Clear pull from one or two segments, but we haven't adapted positioning or messaging yet.",
+                    "Strong pull from specific segments, and we're beginning to adjust positioning.",
+                    "Clear segment traction and refined positioning based on competitor moves and market dynamics."
+                ]},
+                { label: "How well is your product performing with real users — and is your tech ready to scale with them?", name: "early_traction_product_usage", type: "select", options: [
+                    "We're still collecting usage feedback and haven't addressed any scaling issues.",
+                    "We've identified some issues from users or usage spikes, but haven't acted on them.",
+                    "We've addressed surface-level bugs or UX issues, but deeper usage or scaling risks remain.",
+                    "We've improved key UX friction points and resolved core tech bottlenecks.",
+                    "Our product is resonating with users and our systems are handling growth without issues."
+                ]},
+                { label: "How clearly have you defined your go-to-market system — including your sales/marketing funnel, channel tests, and how you're learning what resonates with customers?", name: "early_traction_gtm_execution", type: "select", options: [
+                    "We haven't structured GTM efforts yet.",
+                    "We're experimenting but don't have a clear system.",
+                    "We have a basic funnel and run some GTM tests.",
+                    "We actively learn from funnel data and messaging experiments.",
+                    "We have a repeatable GTM system with clear insights by segment."
+                ]},
+                { label: "What systems or processes have you established to support delivery and team scalability?", name: "early_traction_ops_scalability", type: "select", options: [
+                    "No systems or defined processes yet.",
+                    "Some informal processes in place, but inconsistent.",
+                    "Defined lightweight systems or tools in early use.",
+                    "Clear ownership of ops/CS/QA roles and basic delivery metrics tracked.",
+                    "Processes and metrics (SLAs, NPS, resolution time) actively used to manage performance."
+                ]},
+                { label: "How well have you addressed your startup's basic legal and compliance responsibilities?", name: "early_traction_legal_compliance", type: "select", options: [
+                    "Haven't reviewed legal or compliance requirements.",
+                    "Basic IP/contracts reviewed but nothing formal.",
+                    "Some key documents in place (e.g. NDAs).",
+                    "Legal docs mostly ready, and sector-specific compliance considered.",
+                    "All key legal docs in place and compliance risks identified and addressed."
+                ]},
+                { label: "How clearly can you see that users are getting value from your product — and moving toward becoming paying customers?", name: "early_traction_activation_monetization", type: "select", options: [
+                    "We haven't defined what 'value' means yet.",
+                    "Some users get value, but few convert to paying.",
+                    "There's early signs of both value and conversion.",
+                    "A decent % of users convert and stick.",
+                    "Strong value delivery and reliable monetisation."
+                ]},
+                { label: "What capability or capacity gaps could hold back your next phase of execution, and how are you addressing them?", name: "early_traction_capability_gaps", type: "select", options: [
+                    "Team under pressure — struggling to deliver current roadmap.",
+                    "Major gaps limiting progress — no clear plan to solve.",
+                    "Clear capability gaps, actively hiring or partnering to fill them.",
+                    "Minor gaps in specific roles or skills, already planning to address.",
+                    "No major gaps — team is resourced and executing well."
+                ]},
+                { label: "How are you building culture and supporting team performance as your team begins to scale?", name: "early_traction_people_culture", type: "select", options: [
+                    "No real onboarding or cultural practices in place.",
+                    "Ad hoc onboarding; no performance feedback yet.",
+                    "Starting to define culture; some onboarding basics in place.",
+                    "Onboarding process and informal feedback exist.",
+                    "Strong culture-building; onboarding and feedback systems actively used."
+                ]},
+                { label: "How well developed is your financial planning — including your revenue model and ability to forecast different paths forward?", name: "early_traction_financial_planning", type: "select", options: [
+                    "No real forecasting or financial planning in place.",
+                    "Very rough estimates; limited link to actual performance.",
+                    "Have some projections and a working revenue model, but not updated regularly.",
+                    "Forecasts are updated with real data; strategy includes burn and revenue streams.",
+                    "Financial plan is dynamic — includes updated burn, revenue projections, and multiple scenarios."
+                ]},
+                { label: "How well developed is your investment story and fundraising process? (Consider traction data, proof points, investor targeting, and outreach process.)", name: "early_traction_investment_narrative", type: "select", options: [
+                    "We haven't started refining our story or identifying investors yet.",
+                    "We've drafted our pitch narrative but have limited traction or proof points.",
+                    "We've pulled together traction data and know the types of investors to target.",
+                    "We have clear proof points and are actively targeting aligned investors with a defined outreach process.",
+                    "We're engaging investors with a compelling narrative, solid metrics, and structured outreach."
+                ]},
+                { label: "How clearly have you mapped out your growth priorities for the next few months and aligned your team around them?", name: "early_traction_strategic_planning", type: "select", options: [
+                    "No clear priorities or alignment yet.",
+                    "Some general priorities identified, but not shared across team.",
+                    "Priorities defined and loosely tracked.",
+                    "Priorities linked to goals and timelines.",
+                    "Shared, tracked plan with clear ownership and alignment"
+                ]},
+                { label: "How confident are you that your startup is ready to scale — from a tech, team, and operations standpoint?", name: "early_traction_scale_readiness", type: "select", options: [
+                    "We haven't assessed scale readiness yet.",
+                    "We see some blockers, but haven't addressed them.",
+                    "We've started resolving key issues.",
+                    "Most blockers addressed, some plans in place.",
+                    "Fully confident — we're structurally ready to grow"
+                ]}
+            ],
+            "Growth": [
+                { label: "How would you describe your current approach to ensuring customers are retained, supported, and expanding over time?", name: "growth_customer_retention", type: "select", options: [
+                    "We don't have any structured customer success or retention strategy.",
+                    "We respond to issues reactively but don't track success or outcomes.",
+                    "We have some customer-facing support processes but they're inconsistent.",
+                    "We've defined success outcomes and actively work to retain and expand customers.",
+                    "We have a structured customer success system with retention and expansion goals, tactics, and tracking in place."
+                ]},
+                { label: "How clearly are you differentiating from competitors in your positioning, and how often do you adapt your messaging as the market evolves?", name: "growth_competitive_differentiation", type: "select", options: [
+                    "Our positioning isn't clearly differentiated and rarely updated.",
+                    "We know who our competitors are, but our messaging doesn't strongly highlight our differences.",
+                    "We highlight a few key differences, but our positioning needs sharpening.",
+                    "We regularly track competitors and refine our messaging based on what we learn.",
+                    "Our positioning is highly differentiated, updated often, and reinforced across GTM assets."
+                ]},
+                { label: "How well is your product scaling — both in terms of features for different users and system reliability under growth?", name: "growth_product_depth", type: "select", options: [
+                    "Our product isn't scaling well and we haven't adapted features or infra for growth.",
+                    "We've made basic improvements, but still face UX or system issues under load.",
+                    "We've started expanding features or scaling infra, but there are still blockers.",
+                    "We're expanding features based on segment feedback and strengthening systems.",
+                    "Our product is scaling confidently across user types, and our systems are stable under growth."
+                ]},
+                { label: "How would you describe your current go-to-market engine — including your use of channels, ability to generate pipeline, and how effectively you're scaling GTM operations?", name: "growth_gtm_engine", type: "select", options: [
+                    "GTM growth is still founder-led and inconsistent.",
+                    "We have 1–2 working channels but no repeatable engine.",
+                    "We have an emerging GTM system but it's not scalable yet.",
+                    "We've built reliable GTM systems with early team/process scale.",
+                    "We're confidently scaling pipeline, channels, and sales ops."
+                ]},
+                { label: "How effectively are your systems supporting scalable operations and team decision-making?", name: "growth_systems_tooling", type: "select", options: [
+                    "No systems or automation in place.",
+                    "Some tools used manually, but no integration or dashboards.",
+                    "Basic automation or dashboards in limited use.",
+                    "Repeatable systems in place across functions with visibility into ops.",
+                    "Automated systems, shared dashboards, and low manual effort across key teams."
+                ]},
+                { label: "How prepared are you to manage regulatory and compliance risks across new markets or segments?", name: "growth_regulatory_compliance", type: "select", options: [
+                    "No formal compliance planning.",
+                    "Ad hoc legal posture reviews.",
+                    "Identified key risks, with some compliance plans in place.",
+                    "Compliance approach aligned to new markets or customer types.",
+                    "Proactive compliance management across legal, regulatory, and security domains."
+                ]},
+                { label: "How well are you tracking and using data to understand whether your user or revenue growth is sustainable?", name: "growth_sustainable_metrics", type: "select", options: [
+                    "We don't track retention or user quality.",
+                    "We track some metrics but don't use them regularly.",
+                    "We track and review retention and growth signals but rarely act on them.",
+                    "We actively use growth and retention trends to guide product decisions.",
+                    "We track cohorts, NPS, and funnel signals to guide growth investments."
+                ]},
+                { label: "How structured and scalable is your team's leadership, decision-making, and performance approach?", name: "growth_org_structure", type: "select", options: [
+                    "No formal structure or leadership development.",
+                    "Some informal leads but unclear roles or ownership.",
+                    "Partial structure; limited leadership or feedback practices.",
+                    "Defined structure and growing leadership maturity.",
+                    "Strong leadership, structure, and performance culture."
+                ]},
+                { label: "How strong is your financial discipline in terms of growth forecasting, revenue strategy, and cost control?", name: "growth_financial_discipline", type: "select", options: [
+                    "Forecasting is ad hoc and we don't update projections consistently.",
+                    "Some visibility into revenue and spend, but no real growth planning or controls.",
+                    "Basic revenue model and cost tracking in place, but not tightly linked to growth.",
+                    "Strong forecasting with cost controls and evolving monetisation model.",
+                    "Robust discipline — 12–24 month forecasts, cost controls, and optimised monetisation tied to growth segments."
+                ]},
+                { label: "How prepared are you for institutional fundraising and ongoing investor/board engagement? (Consider materials, metrics, board cadence, and reporting.)", name: "growth_institutional_fundraising", type: "select", options: [
+                    "We haven't begun preparing for institutional investors or board engagement.",
+                    "We've started gathering materials and discussing investor needs but still have key gaps.",
+                    "We have the basics in place (e.g. deck, data room, investor conversations) and are engaging our board periodically.",
+                    "We're actively engaging institutional investors and maintaining a consistent board/investor comms rhythm.",
+                    "We're fully prepared for institutional rounds with clear reporting and board alignment."
+                ]},
+                { label: "How clearly have you defined your top strategic priorities — and are they visible, owned, and tracked across the team?", name: "growth_strategic_focus", type: "select", options: [
+                    "No clear strategic priorities yet.",
+                    "Some priorities defined, but not shared widely or tracked.",
+                    "Priorities defined, with informal tracking.",
+                    "Priorities tracked with some ownership.",
+                    "Priorities linked to OKRs or roadmap, with ownership and team-wide alignment."
+                ]},
+                { label: "Have you begun developing a repeatable playbook for market, product, or segment expansion?", name: "growth_expansion_playbook", type: "select", options: [
+                    "No expansion plans or activity yet.",
+                    "Considering expansion options, but no structure.",
+                    "Pilot efforts started with limited learnings.",
+                    "Some repeatable success in early expansions.",
+                    "Structured playbook with tracked KPIs, risks, and repeatability criteria"
+                ]}
+            ],
+            "Scale": [
+                { label: "How would you describe your approach to managing different customer segments and turning success into market influence?", name: "scale_enterprise_portfolio", type: "select", options: [
+                    "We manage all customers the same and don't track outcomes.",
+                    "We handle some customers differently but it's not strategic.",
+                    "We've started segmenting customers and capturing some success stories.",
+                    "We have a structured approach to segment management and track customer outcomes.",
+                    "We run a portfolio model with segment-based playbooks, tracked outcomes, and use cases that support market credibility."
+                ]},
+                { label: "How clearly have you prioritised market segments across regions or verticals, and how are you tracking competitive shifts to inform positioning?", name: "scale_segment_strategy", type: "select", options: [
+                    "We haven't clearly prioritised segments or tracked market dynamics.",
+                    "We have basic segment ideas, but limited structure or consistency.",
+                    "We're starting to prioritise segments regionally, but lack solid data or a consistent approach.",
+                    "We've defined priority segments and adapt strategy with some monitoring of competitor/category shifts.",
+                    "We've mapped core/emerging segments by region and track category shifts to refine global positioning."
+                ]},
+                { label: "How prepared are you for international expansion in terms of market insights, sequencing, and local team enablement?", name: "scale_market_intelligence", type: "select", options: [
+                    "We haven't explored international expansion or done any research.",
+                    "We've done some initial thinking but no structured market analysis or planning.",
+                    "We've identified priority markets and have begun some research or basic frameworks.",
+                    "We've defined a market entry strategy and built frameworks for sequencing and risk.",
+                    "We have a defined strategy, regular intelligence gathering, and enablement systems for local teams."
+                ]},
+                { label: "How prepared is your product to scale as a platform — and deliver value reliably across a broad customer base?", name: "scale_platform_ecosystem", type: "select", options: [
+                    "We're not yet thinking about extensibility, scale, or enterprise reliability.",
+                    "We've made early efforts, but gaps remain in platform readiness and system stability.",
+                    "We're working on APIs/integrations or infra improvements, but customer impact is inconsistent.",
+                    "We've launched platform elements and improved system reliability for key segments.",
+                    "Our product delivers consistent value at scale, with strong platform infrastructure and extensibility."
+                ]},
+                { label: "How are you scaling your go-to-market strategy across different regions, channels, or customer types?", name: "scale_international_gtm", type: "select", options: [
+                    "We haven't adapted GTM strategy for scale yet.",
+                    "We've started thinking about channels or regions but not executing.",
+                    "We're testing new GTM strategies in a few areas.",
+                    "We're executing targeted strategies across multiple segments.",
+                    "We have tailored GTM execution across markets, channels, and buyer types."
+                ]},
+                { label: "How well have you institutionalised systems and processes to ensure consistent, high-quality delivery across regions and functions?", name: "scale_enterprise_systems", type: "select", options: [
+                    "We're still mostly relying on ad hoc tools or informal processes across key functions.",
+                    "We've introduced some systems and defined processes, but consistency and oversight vary by team or region.",
+                    "We've implemented key systems and standardised delivery workflows, with some tracking in place.",
+                    "Our systems, processes, and governance frameworks are consistent across functions, with performance tracking in place.",
+                    "We have enterprise-grade systems, clearly defined governance, and full visibility into delivery quality and operations globally."
+                ]},
+                { label: "How well does your team use centralized data to inform planning and decision-making at scale?", name: "scale_central_data_platform", type: "select", options: [
+                    "We use centralized, reliable data and dashboards to support strategic planning, forecasting, and real-time decisions across functions.",
+                    "We have dashboards and models in place for some areas (e.g., finance or GTM), but not consistently across the org.",
+                    "We've started centralizing key data, but usage is mostly limited to reporting – not proactive planning.",
+                    "We track some data manually or in silos, but we don't use it to guide strategic decisions.",
+                    "We don't yet have centralized data infrastructure or planning models."
+                ]},
+                { label: "How clearly are you identifying and improving the leverage points across your business — like sales efficiency, operational cost, or margins?", name: "scale_business_leverage", type: "select", options: [
+                    "We haven't assessed these yet.",
+                    "We've looked at some, but not tracked them consistently.",
+                    "We've started tracking a few key ratios or team efficiencies.",
+                    "We actively track cost/margin and adjust operations.",
+                    "We benchmark and optimise across multiple business functions."
+                ]},
+                { label: "How well are you evolving your leadership team, succession plans, and org structure for long-term scale?", name: "scale_org_design", type: "select", options: [
+                    "No formal succession or leadership scaling efforts.",
+                    "Informal structure with unclear ownership or long-term planning.",
+                    "Early discussions on succession/org design.",
+                    "Defined ownership + starting LTIP/talent planning.",
+                    "Clear succession, LTIP, and scalable org in place."
+                ]},
+                { label: "How would you describe your maturity in financial control, capital allocation, and forecasting sustainability at scale?", name: "scale_capital_allocation", type: "select", options: [
+                    "No formal capital allocation or reporting processes yet.",
+                    "Budgeting exists, but we don't track actuals vs. forecasts in detail.",
+                    "Some controls in place — forecasts, board reporting, and audit prep started.",
+                    "Strong systems — regular board packs, cap efficiency metrics, financial controls.",
+                    "Full maturity — disciplined capital allocation, audit readiness, and efficient scaling with investor-grade reporting."
+                ]},
+                { label: "How well-prepared is your company for long-term strategic options — and how effectively are you engaging your board on them?", name: "scale_strategic_optionality", type: "select", options: [
+                    "No clear thinking on exits or strategic paths, minimal board engagement.",
+                    "Some discussions started, but no structured planning.",
+                    "Options loosely defined, early board involvement.",
+                    "Defined strategic paths, regular board input.",
+                    "Strategic paths planned with metrics and active board alignment"
+                ]},
+                { label: "How intentionally are you using partnerships or acquisitions to accelerate scale?", name: "scale_inorganic_growth", type: "select", options: [
+                    "We're actively executing strategic partnerships or acquisitions with structured frameworks in place (e.g., due diligence, integration, success metrics).",
+                    "We've identified potential partners or targets and are preparing internal capabilities to act.",
+                    "We're exploring inorganic options but haven't made structured plans yet.",
+                    "We aren't currently pursuing partnerships or M&A as part of our growth strategy.",
+                    "We don't see partnerships or acquisitions playing a role for us in the foreseeable future."
+                ]}
+            ]
+        };
+
+        // Initialize form
+        function startForm() {
+            document.getElementById('consentScreen').style.display = 'none';
+            document.getElementById('mainForm').style.display = 'block';
+            initializeForm();
+        }
+
+        function initializeForm() {
+            const form = document.getElementById('startupForm');
+            form.innerHTML = '';
+            
+            questions.forEach((question, index) => {
+                const stepDiv = document.createElement('div');
+                stepDiv.className = `step ${index === 0 ? 'active' : ''}`;
+                stepDiv.id = `step${index + 1}`;
+                
+                stepDiv.innerHTML = `
+                    <h2>Question ${index + 1} of ${questions.length}</h2>
+                    <div class="form-group">
+                        <label for="${question.name}" class="${question.required ? 'required' : ''}">${question.label}</label>
+                        ${generateInput(question)}
+                    </div>
+                    <div class="button-row">
+                        ${index > 0 ? '<button type="button" onclick="prevStep()">Back</button>' : '<div></div>'}
+                        ${index < questions.length - 1 ? '<button type="button" onclick="nextStep()">Continue</button>' : '<button type="button" onclick="calculateStage()">Next Question</button>'}
+                    </div>
+                `;
+                
+                form.appendChild(stepDiv);
+            });
+            
+            updateProgress();
+        }
+
+        function generateInput(question) {
+            switch(question.type) {
+                case 'text':
+                case 'email':
+                case 'url':
+                    return `<input type="${question.type}" id="${question.name}" name="${question.name}" placeholder="${question.placeholder || ''}" ${question.required ? 'required' : ''}>`;
+                case 'number':
+                    return `<input type="number" id="${question.name}" name="${question.name}" placeholder="${question.placeholder || ''}" ${question.min ? `min="${question.min}"` : ''} ${question.step ? `step="${question.step}"` : ''} ${question.required ? 'required' : ''}>`;
+                case 'textarea':
+                    return `<textarea id="${question.name}" name="${question.name}" placeholder="${question.placeholder || ''}" rows="4" ${question.required ? 'required' : ''}></textarea>`;
+                case 'select':
+                    let options = '<option value="">Please select...</option>';
+                    question.options.forEach(option => {
+                        options += `<option value="${option}">${option}</option>`;
+                    });
+                    let selectHtml = `<select id="${question.name}" name="${question.name}" ${question.required ? 'required' : ''} onchange="handleOtherOption(this)">${options}</select>`;
+                    
+                    // Add "Other" input field if the question has "Other" options
+                    if (question.options.some(opt => opt.includes('Other'))) {
+                        selectHtml += `<input type="text" id="${question.name}_other" name="${question.name}_other" placeholder="Please specify..." class="other-input" style="display: none;">`;
+                    }
+                    
+                    return selectHtml;
+                case 'checkbox':
+                    let checkboxes = '';
+                    question.options.forEach(option => {
+                        checkboxes += `<label><input type="checkbox" name="${question.name}" value="${option}" onchange="handleOtherCheckbox(this)"> ${option}</label><br>`;
+                    });
+                    let checkboxHtml = `<div>${checkboxes}</div>`;
+                    
+                    // Add "Other" input field if the question has "Other" options
+                    if (question.options.some(opt => opt.includes('Other'))) {
+                        checkboxHtml += `<input type="text" id="${question.name}_other" name="${question.name}_other" placeholder="Please specify..." class="other-input" style="display: none;">`;
+                    }
+                    
+                    return checkboxHtml;
+                default:
+                    return `<input type="text" id="${question.name}" name="${question.name}" ${question.required ? 'required' : ''}>`;
+            }
+        }
+
+        function handleOtherOption(select) {
+            const otherInput = document.getElementById(select.name + '_other');
+            if (otherInput) {
+                if (select.value.includes('Other')) {
+                    otherInput.style.display = 'block';
+                    otherInput.required = true;
+                } else {
+                    otherInput.style.display = 'none';
+                    otherInput.required = false;
+                    otherInput.value = '';
+                }
+            }
+        }
+
+        function handleOtherCheckbox(checkbox) {
+            const otherInput = document.getElementById(checkbox.name + '_other');
+            if (otherInput) {
+                const checkboxes = document.querySelectorAll(`input[name="${checkbox.name}"]:checked`);
+                const hasOther = Array.from(checkboxes).some(cb => cb.value.includes('Other'));
+                
+                if (hasOther) {
+                    otherInput.style.display = 'block';
+                    otherInput.required = true;
+                } else {
+                    otherInput.style.display = 'none';
+                    otherInput.required = false;
+                    otherInput.value = '';
+                }
+            }
+        }
+
+        function updateProgress() {
+            const progress = (currentStep / totalSteps) * 100;
+            document.getElementById('progress').style.width = progress + '%';
+        }
+
+        function showStep(stepNumber) {
+            document.querySelectorAll('.step').forEach(step => {
+                step.classList.remove('active');
+            });
+            document.getElementById(`step${stepNumber}`).classList.add('active');
+            updateProgress();
+        }
+
+        function nextStep() {
+            if (!validateCurrentStep()) {
+                return;
+            }
+            
+            // Auto-save progress
+            saveProgress();
+            
+            if (currentStep < totalSteps) {
+                currentStep++;
+                showStep(currentStep);
+            }
+        }
+
+        function prevStep() {
+            if (currentStep > 1) {
+                currentStep--;
+                showStep(currentStep);
+            }
+        }
+
+        function collectAnswers() {
+            answers = {};
+            questions.forEach(question => {
+                if (question.type === 'checkbox') {
+                    const checkboxes = document.querySelectorAll(`input[name="${question.name}"]:checked`);
+                    let values = Array.from(checkboxes).map(cb => cb.value);
+                    
+                    // Handle "Other" option for checkboxes
+                    const otherInput = document.getElementById(question.name + '_other');
+                    if (otherInput && otherInput.style.display !== 'none' && otherInput.value) {
+                        values = values.map(v => v.includes('Other') ? `Other: ${otherInput.value}` : v);
+                    }
+                    
+                    answers[question.name] = values;
+                } else {
+                    const element = document.getElementById(question.name);
+                    if (element) {
+                        let value = element.value;
+                        
+                        // Handle "Other" option for selects
+                        if (question.type === 'select' && value.includes('Other')) {
+                            const otherInput = document.getElementById(question.name + '_other');
+                            if (otherInput && otherInput.style.display !== 'none' && otherInput.value) {
+                                value = `Other: ${otherInput.value}`;
+                            }
+                        }
+                        
+                        answers[question.name] = value;
+                    }
+                }
+            });
+        }
+
+        function validateCurrentStep() {
+            const currentQuestion = questions[currentStep - 1];
+            if (!currentQuestion.required) return true;
+            
+            const element = document.getElementById(currentQuestion.name);
+            if (!element) return true;
+            
+            if (currentQuestion.type === 'checkbox') {
+                const checkboxes = document.querySelectorAll(`input[name="${currentQuestion.name}"]:checked`);
+                if (checkboxes.length === 0) {
+                    alert('Please select at least one option.');
+                    return false;
+                }
+                
+                // Check if "Other" is selected but no value provided
+                const hasOther = Array.from(checkboxes).some(cb => cb.value.includes('Other'));
+                if (hasOther) {
+                    const otherInput = document.getElementById(currentQuestion.name + '_other');
+                    if (otherInput && otherInput.style.display !== 'none' && !otherInput.value.trim()) {
+                        alert('Please specify your "Other" option.');
+                        return false;
+                    }
+                }
+            } else {
+                if (!element.value.trim()) {
+                    alert('This field is required.');
+                    element.focus();
+                    return false;
+                }
+                
+                // Check if "Other" is selected but no value provided
+                if (currentQuestion.type === 'select' && element.value.includes('Other')) {
+                    const otherInput = document.getElementById(currentQuestion.name + '_other');
+                    if (otherInput && otherInput.style.display !== 'none' && !otherInput.value.trim()) {
+                        alert('Please specify your "Other" option.');
+                        return false;
+                    }
+                }
+            }
+            
+            return true;
+        }
+
+        // Sophisticated scoring matrix based on business context
+        const scoringMatrix = {
+            'B2B': {
+                'Tier1': {
+                    'SaaS': {
+                        'Lean': {
+                            'Revenue': { red: 0, amber: 60000, green: 300000 },
+                            'Customers/Users': { red: 0, amber: 8, green: 40 },
+                            'Funding Raised': { red: 0, amber: 350000, green: 3500000 },
+                            'Team Size': { red: 0, amber: 4, green: 15 },
+                            'Burn Rate/Runway': { red: 0, amber: 3, green: 7 }
+                        },
+                        'CapitalIntensive': {
+                            'Revenue': { red: 0, amber: 80000, green: 400000 },
+                            'Customers/Users': { red: 0, amber: 10, green: 50 },
+                            'Funding Raised': { red: 0, amber: 500000, green: 5000000 },
+                            'Team Size': { red: 0, amber: 5, green: 20 },
+                            'Burn Rate/Runway': { red: 0, amber: 4, green: 9 }
+                        }
+                    },
+                    'Marketplace': {
+                        'Lean': {
+                            'Revenue': { red: 0, amber: 75000, green: 375000 },
+                            'Customers/Users': { red: 0, amber: 10, green: 50 },
+                            'Funding Raised': { red: 0, amber: 350000, green: 3500000 },
+                            'Team Size': { red: 0, amber: 5, green: 20 },
+                            'Burn Rate/Runway': { red: 0, amber: 3, green: 7 }
+                        },
+                        'CapitalIntensive': {
+                            'Revenue': { red: 0, amber: 80000, green: 400000 },
+                            'Customers/Users': { red: 0, amber: 12, green: 60 },
+                            'Funding Raised': { red: 0, amber: 500000, green: 5000000 },
+                            'Team Size': { red: 0, amber: 6, green: 25 },
+                            'Burn Rate/Runway': { red: 0, amber: 4, green: 9 }
+                        }
+                    },
+                    'Other': {
+                        'Lean': {
+                            'Revenue': { red: 0, amber: 75000, green: 375000 },
+                            'Customers/Users': { red: 0, amber: 7, green: 35 },
+                            'Funding Raised': { red: 0, amber: 350000, green: 3500000 },
+                            'Team Size': { red: 0, amber: 4, green: 18 },
+                            'Burn Rate/Runway': { red: 0, amber: 3, green: 7 }
+                        },
+                        'CapitalIntensive': {
+                            'Revenue': { red: 0, amber: 100000, green: 500000 },
+                            'Customers/Users': { red: 0, amber: 9, green: 45 },
+                            'Funding Raised': { red: 0, amber: 500000, green: 5000000 },
+                            'Team Size': { red: 0, amber: 5, green: 22 },
+                            'Burn Rate/Runway': { red: 0, amber: 4, green: 9 }
+                        }
+                    }
+                },
+                'Tier2/3': {
+                    'SaaS': {
+                        'Lean': {
+                            'Revenue': { red: 0, amber: 37500, green: 187500 },
+                            'Customers/Users': { red: 0, amber: 4, green: 20 },
+                            'Funding Raised': { red: 0, amber: 210000, green: 2100000 },
+                            'Team Size': { red: 0, amber: 3, green: 12 },
+                            'Burn Rate/Runway': { red: 0, amber: 3, green: 5 }
+                        },
+                        'CapitalIntensive': {
+                            'Revenue': { red: 0, amber: 50000, green: 250000 },
+                            'Customers/Users': { red: 0, amber: 5, green: 25 },
+                            'Funding Raised': { red: 0, amber: 300000, green: 3000000 },
+                            'Team Size': { red: 0, amber: 4, green: 15 },
+                            'Burn Rate/Runway': { red: 0, amber: 4, green: 6 }
+                        }
+                    },
+                    'Marketplace': {
+                        'Lean': {
+                            'Revenue': { red: 0, amber: 37500, green: 187500 },
+                            'Customers/Users': { red: 0, amber: 5, green: 25 },
+                            'Funding Raised': { red: 0, amber: 210000, green: 2100000 },
+                            'Team Size': { red: 0, amber: 3, green: 12 },
+                            'Burn Rate/Runway': { red: 0, amber: 3, green: 5 }
+                        },
+                        'CapitalIntensive': {
+                            'Revenue': { red: 0, amber: 50000, green: 250000 },
+                            'Customers/Users': { red: 0, amber: 6, green: 30 },
+                            'Funding Raised': { red: 0, amber: 300000, green: 3000000 },
+                            'Team Size': { red: 0, amber: 4, green: 15 },
+                            'Burn Rate/Runway': { red: 0, amber: 4, green: 6 }
+                        }
+                    },
+                    'Other': {
+                        'Lean': {
+                            'Revenue': { red: 0, amber: 37500, green: 187500 },
+                            'Customers/Users': { red: 0, amber: 4, green: 20 },
+                            'Funding Raised': { red: 0, amber: 210000, green: 2100000 },
+                            'Team Size': { red: 0, amber: 3, green: 12 },
+                            'Burn Rate/Runway': { red: 0, amber: 3, green: 5 }
+                        },
+                        'CapitalIntensive': {
+                            'Revenue': { red: 0, amber: 50000, green: 250000 },
+                            'Customers/Users': { red: 0, amber: 5, green: 25 },
+                            'Funding Raised': { red: 0, amber: 300000, green: 3000000 },
+                            'Team Size': { red: 0, amber: 4, green: 15 },
+                            'Burn Rate/Runway': { red: 0, amber: 4, green: 6 }
+                        }
+                    }
+                }
+            },
+            'B2C': {
+                'Tier1': {
+                    'SaaS': {
+                        'Lean': {
+                            'Revenue': { red: 0, amber: 112500, green: 562500 },
+                            'Customers/Users': { red: 0, amber: 60, green: 250 },
+                            'Funding Raised': { red: 0, amber: 420000, green: 4200000 },
+                            'Team Size': { red: 0, amber: 5, green: 25 },
+                            'Burn Rate/Runway': { red: 0, amber: 4, green: 10 }
+                        },
+                        'CapitalIntensive': {
+                            'Revenue': { red: 0, amber: 120000, green: 600000 },
+                            'Customers/Users': { red: 0, amber: 75, green: 300 },
+                            'Funding Raised': { red: 0, amber: 600000, green: 6000000 },
+                            'Team Size': { red: 0, amber: 6, green: 30 },
+                            'Burn Rate/Runway': { red: 0, amber: 5, green: 12 }
+                        }
+                    },
+                    'Marketplace': {
+                        'Lean': {
+                            'Revenue': { red: 0, amber: 112500, green: 562500 },
+                            'Customers/Users': { red: 0, amber: 75, green: 300 },
+                            'Funding Raised': { red: 0, amber: 420000, green: 4200000 },
+                            'Team Size': { red: 0, amber: 6, green: 30 },
+                            'Burn Rate/Runway': { red: 0, amber: 4, green: 10 }
+                        },
+                        'CapitalIntensive': {
+                            'Revenue': { red: 0, amber: 150000, green: 750000 },
+                            'Customers/Users': { red: 0, amber: 100, green: 400 },
+                            'Funding Raised': { red: 0, amber: 600000, green: 6000000 },
+                            'Team Size': { red: 0, amber: 7, green: 35 },
+                            'Burn Rate/Runway': { red: 0, amber: 5, green: 12 }
+                        }
+                    },
+                    'Other': {
+                        'Lean': {
+                            'Revenue': { red: 0, amber: 90000, green: 400000 },
+                            'Customers/Users': { red: 0, amber: 50, green: 200 },
+                            'Funding Raised': { red: 0, amber: 420000, green: 4200000 },
+                            'Team Size': { red: 0, amber: 5, green: 22 },
+                            'Burn Rate/Runway': { red: 0, amber: 4, green: 10 }
+                        },
+                        'CapitalIntensive': {
+                            'Revenue': { red: 0, amber: 150000, green: 750000 },
+                            'Customers/Users': { red: 0, amber: 60, green: 250 },
+                            'Funding Raised': { red: 0, amber: 600000, green: 6000000 },
+                            'Team Size': { red: 0, amber: 6, green: 28 },
+                            'Burn Rate/Runway': { red: 0, amber: 5, green: 12 }
+                        }
+                    }
+                },
+                'Tier2/3': {
+                    'SaaS': {
+                        'Lean': {
+                            'Revenue': { red: 0, amber: 56250, green: 281250 },
+                            'Customers/Users': { red: 0, amber: 40, green: 150 },
+                            'Funding Raised': { red: 0, amber: 252000, green: 2520000 },
+                            'Team Size': { red: 0, amber: 4, green: 16 },
+                            'Burn Rate/Runway': { red: 0, amber: 4, green: 6 }
+                        },
+                        'CapitalIntensive': {
+                            'Revenue': { red: 0, amber: 75000, green: 375000 },
+                            'Customers/Users': { red: 0, amber: 50, green: 200 },
+                            'Funding Raised': { red: 0, amber: 360000, green: 3600000 },
+                            'Team Size': { red: 0, amber: 5, green: 20 },
+                            'Burn Rate/Runway': { red: 0, amber: 4, green: 7 }
+                        }
+                    },
+                    'Marketplace': {
+                        'Lean': {
+                            'Revenue': { red: 0, amber: 56250, green: 281250 },
+                            'Customers/Users': { red: 0, amber: 60, green: 250 },
+                            'Funding Raised': { red: 0, amber: 252000, green: 2520000 },
+                            'Team Size': { red: 0, amber: 4, green: 16 },
+                            'Burn Rate/Runway': { red: 0, amber: 4, green: 6 }
+                        },
+                        'CapitalIntensive': {
+                            'Revenue': { red: 0, amber: 75000, green: 375000 },
+                            'Customers/Users': { red: 0, amber: 75, green: 300 },
+                            'Funding Raised': { red: 0, amber: 360000, green: 3600000 },
+                            'Team Size': { red: 0, amber: 5, green: 20 },
+                            'Burn Rate/Runway': { red: 0, amber: 4, green: 7 }
+                        }
+                    },
+                    'Other': {
+                        'Lean': {
+                            'Revenue': { red: 0, amber: 56250, green: 281250 },
+                            'Customers/Users': { red: 0, amber: 40, green: 150 },
+                            'Funding Raised': { red: 0, amber: 252000, green: 2520000 },
+                            'Team Size': { red: 0, amber: 4, green: 16 },
+                            'Burn Rate/Runway': { red: 0, amber: 4, green: 6 }
+                        },
+                        'CapitalIntensive': {
+                            'Revenue': { red: 0, amber: 60000, green: 300000 },
+                            'Customers/Users': { red: 0, amber: 50, green: 200 },
+                            'Funding Raised': { red: 0, amber: 360000, green: 3600000 },
+                            'Team Size': { red: 0, amber: 5, green: 20 },
+                            'Burn Rate/Runway': { red: 0, amber: 4, green: 7 }
+                        }
+                    }
+                }
+            }
+        };
+
+        function calculateStage() {
+            collectAnswers();
+            
+            // Profile classification
+            const businessModelMapping = {
+                'B2B (selling to businesses)': 'B2B',
+                'B2C (selling to consumers)': 'B2C',
+                'B2G (selling to government)': 'B2B',
+                'Marketplace (buyers & sellers)': 'B2B',
+                'Direct-to-Consumer (D2C)': 'B2C',
+                'Subscription (e.g., SaaS)': 'B2B',
+                'Consumer App': 'B2C',
+                'Other / Not Listed': 'B2B'
+            };
+
+            const regionMapping = {
+                'North America (US, Canada)': 'Tier1',
+                'Western Europe (e.g. UK, Germany, France, Nordics etc.)': 'Tier1',
+                'Australia & New Zealand': 'Tier1',
+                'East Asia (e.g. China, Japan, Korea, Singapore)': 'Tier1',
+                'Central & Eastern Europe': 'Tier2/3',
+                'Latin America': 'Tier2/3',
+                'Sub-Saharan Africa': 'Tier2/3',
+                'Middle East & North Africa (MENA)': 'Tier2/3',
+                'South Asia (e.g. India, Pakistan)': 'Tier2/3',
+                'Southeast Asia (e.g. Indonesia, Vietnam, Philippines)': 'Tier2/3',
+                'Other': 'Tier2/3'
+            };
+
+            const businessTypeMapping = {
+                'SaaS (Software as a Service)': 'SaaS',
+                'Marketplace (connecting buyers/sellers)': 'Marketplace',
+                'E-commerce / DTC': 'Other',
+                'Hardware / Devices': 'Other',
+                'Services (e.g. consulting, agency)': 'Other',
+                'Platform / API-based': 'SaaS',
+                'Community or Content-led': 'Other',
+                'Other': 'Other'
+            };
+
+            const industryMapping = {
+                'Software / SaaS': 'Lean',
+                'Fintech / Insurtech': 'CapitalIntensive',
+                'Health / MedTech': 'CapitalIntensive',
+                'E-commerce / DTC': 'Lean',
+                'Deep Tech / AI / Robotics': 'CapitalIntensive',
+                'Education / EdTech': 'Lean',
+                'Social Impact / Nonprofit': 'Lean',
+                'Other': 'Lean'
+            };
+
+            const businessModel = businessModelMapping[answers.businessModel] || 'B2B';
+            const region = regionMapping[answers.region] || 'Tier1';
+            const businessType = businessTypeMapping[answers.businessType] || 'SaaS';
+            const industry = industryMapping[answers.industry] || 'Lean';
+            
+            const profile = `${businessModel}_${region}_${businessType}_${industry}`;
+
+            // Sophisticated contextual scoring using the matrix
+            let totalScore = 0;
+            let scoreCount = 0;
+            let detailedScores = {};
+
+            // Get the scoring thresholds for this business profile
+            const thresholds = scoringMatrix[businessModel]?.[region]?.[businessType]?.[industry];
+            
+            if (thresholds) {
+                // Score Revenue
+                const revenue = parseFloat(answers.revenue) || 0;
+                let revenueScore = 0;
+                if (revenue >= thresholds['Revenue'].green) revenueScore = 9;
+                else if (revenue >= thresholds['Revenue'].amber) revenueScore = 5;
+                else revenueScore = 2;
+                totalScore += revenueScore;
+                scoreCount++;
+                detailedScores.revenue = { value: revenue, score: revenueScore, thresholds: thresholds['Revenue'] };
+
+                // Score Customers/Users
+                const customers = parseFloat(answers.customers) || 0;
+                let customersScore = 0;
+                if (customers >= thresholds['Customers/Users'].green) customersScore = 9;
+                else if (customers >= thresholds['Customers/Users'].amber) customersScore = 5;
+                else customersScore = 2;
+                totalScore += customersScore;
+                scoreCount++;
+                detailedScores.customers = { value: customers, score: customersScore, thresholds: thresholds['Customers/Users'] };
+
+                // Score Funding Raised
+                const funding = parseFloat(answers.funding) || 0;
+                let fundingScore = 0;
+                if (funding >= thresholds['Funding Raised'].green) fundingScore = 9;
+                else if (funding >= thresholds['Funding Raised'].amber) fundingScore = 5;
+                else fundingScore = 2;
+                totalScore += fundingScore;
+                scoreCount++;
+                detailedScores.funding = { value: funding, score: fundingScore, thresholds: thresholds['Funding Raised'] };
+
+                // Score Team Size
+                const teamSize = parseFloat(answers.teamSize) || 1;
+                let teamScore = 0;
+                if (teamSize >= thresholds['Team Size'].green) teamScore = 9;
+                else if (teamSize >= thresholds['Team Size'].amber) teamScore = 5;
+                else teamScore = 2;
+                totalScore += teamScore;
+                scoreCount++;
+                detailedScores.teamSize = { value: teamSize, score: teamScore, thresholds: thresholds['Team Size'] };
+
+                // Score Burn Rate/Runway
+                const runway = parseFloat(answers.runway) || 0;
+                let runwayScore = 0;
+                if (runway >= thresholds['Burn Rate/Runway'].green) runwayScore = 9;
+                else if (runway >= thresholds['Burn Rate/Runway'].amber) runwayScore = 5;
+                else runwayScore = 2;
+                totalScore += runwayScore;
+                scoreCount++;
+                detailedScores.runway = { value: runway, score: runwayScore, thresholds: thresholds['Burn Rate/Runway'] };
+
+                // Score qualitative questions
+                // Product Readiness
+                let productReadinessScore = 0;
+                switch(answers.productReadiness) {
+                    case 'Idea or concept only': productReadinessScore = 2; break;
+                    case 'Wireframes / mockups': productReadinessScore = 3; break;
+                    case 'MVP built (not in use)': productReadinessScore = 4; break;
+                    case 'MVP being tested with early users': productReadinessScore = 5; break;
+                    case 'Live product with active users': productReadinessScore = 7; break;
+                    case 'Fully launched and scaled': productReadinessScore = 9; break;
+                    default: productReadinessScore = 2;
+                }
+                totalScore += productReadinessScore;
+                scoreCount++;
+                detailedScores.productReadiness = { value: answers.productReadiness, score: productReadinessScore };
+
+                // Engagement Quality
+                let engagementQualityScore = 0;
+                switch(answers.engagementQuality) {
+                    case 'Not applicable': engagementQualityScore = 2; break;
+                    case 'Less than 10%': engagementQualityScore = 3.5; break;
+                    case '10–30%': engagementQualityScore = 5; break;
+                    case '30–60%': engagementQualityScore = 6.5; break;
+                    case 'Over 60%': engagementQualityScore = 9; break;
+                    default: engagementQualityScore = 2;
+                }
+                totalScore += engagementQualityScore;
+                scoreCount++;
+                detailedScores.engagementQuality = { value: answers.engagementQuality, score: engagementQualityScore };
+
+                // Go-To-Market
+                let goToMarketScore = 0;
+                switch(answers.goToMarket) {
+                    case 'Haven\'t started acquiring yet': goToMarketScore = 2; break;
+                    case 'Founder-led outreach or referrals': goToMarketScore = 3.5; break;
+                    case 'Word of mouth / organic demand': goToMarketScore = 5; break;
+                    case 'Paid marketing or ads': goToMarketScore = 6.5; break;
+                    case 'Partnerships / channel sales': goToMarketScore = 7.5; break;
+                    case 'Dedicated sales team or GTM function': goToMarketScore = 9; break;
+                    default: goToMarketScore = 2;
+                }
+                totalScore += goToMarketScore;
+                scoreCount++;
+                detailedScores.goToMarket = { value: answers.goToMarket, score: goToMarketScore };
+
+                // Market & Competition
+                let marketCompetitionScore = 0;
+                switch(answers.marketCompetition) {
+                    case 'We\'re still exploring — haven\'t clearly defined our target market or competitors yet.': marketCompetitionScore = 0; break;
+                    case 'We have a rough idea of our target market and early signs of competitor activity.': marketCompetitionScore = 2; break;
+                    case 'We\'ve completed TAM/SAM/SOM sizing and identified key competitors.': marketCompetitionScore = 4; break;
+                    case 'We have TAM/SAM/SOM + clear articulation of how we differ from existing solutions.': marketCompetitionScore = 5; break;
+                    case 'We deeply understand market dynamics, supported by robust TAM/SAM/SOM + competitor analysis.': marketCompetitionScore = 6; break;
+                    default: marketCompetitionScore = 0;
+                }
+                totalScore += marketCompetitionScore;
+                scoreCount++;
+                detailedScores.marketCompetition = { value: answers.marketCompetition, score: marketCompetitionScore };
+
+                // Risks & Assumptions
+                let risksAssumptionsScore = 0;
+                switch(answers.risksAssumptions) {
+                    case 'We\'ve started thinking through key risks and assumptions but haven\'t formalised anything yet.': risksAssumptionsScore = 2; break;
+                    case 'We\'ve identified a few major assumptions (e.g. demand, pricing, team), and are working out how to test them.': risksAssumptionsScore = 3.5; break;
+                    case 'We\'re actively testing high-risk assumptions through user feedback, pilots, or experiments.': risksAssumptionsScore = 5; break;
+                    case 'We\'ve validated core assumptions and now track remaining risks with basic systems or tools.': risksAssumptionsScore = 6.5; break;
+                    case 'We\'ve built a systematic approach to monitoring and mitigating risks across functions (e.g. ops, product, compliance).': risksAssumptionsScore = 9; break;
+                    default: risksAssumptionsScore = 2;
+                }
+                totalScore += risksAssumptionsScore;
+                scoreCount++;
+                detailedScores.risksAssumptions = { value: answers.risksAssumptions, score: risksAssumptionsScore };
+
+                // Traction Signals
+                let tractionSignalsScore = 0;
+                const tractionSignals = answers.tractionSignals || [];
+                if (tractionSignals.includes('Pilot or beta program completed with users')) tractionSignalsScore += 1.43;
+                if (tractionSignals.includes('Active user or customer engagement')) tractionSignalsScore += 1.43;
+                if (tractionSignals.includes('Signed commercial or strategic agreements (LOIs, MOUs, etc.)')) tractionSignalsScore += 1.43;
+                if (tractionSignals.includes('Channel partner actively generating leads')) tractionSignalsScore += 1.43;
+                if (tractionSignals.includes('10+ customer discovery interviews or UX tests')) tractionSignalsScore += 0.86;
+                if (tractionSignals.includes('Validation that changed product or GTM direction')) tractionSignalsScore += 0.86;
+                if (tractionSignals.includes('Qualified waitlist with warm intent')) tractionSignalsScore += 0.86;
+                if (tractionSignals.includes('Inbound partner or ecosystem interest')) tractionSignalsScore += 0.57;
+                if (tractionSignals.includes('Press, analyst, or ecosystem recognition')) tractionSignalsScore += 0.57;
+                if (tractionSignals.includes('Funnel metrics actively tracked')) tractionSignalsScore += 0.57;
+                
+                totalScore += tractionSignalsScore;
+                scoreCount++;
+                detailedScores.tractionSignals = { value: tractionSignals, score: tractionSignalsScore };
+            } else {
+                // Fallback to simple scoring if profile not found
+                const revenue = parseFloat(answers.revenue) || 0;
+                const customers = parseFloat(answers.customers) || 0;
+                const funding = parseFloat(answers.funding) || 0;
+                const teamSize = parseFloat(answers.teamSize) || 1;
+                const runway = parseFloat(answers.runway) || 0;
+
+                if (revenue > 100000) totalScore += 9;
+                else if (revenue > 50000) totalScore += 5;
+                else totalScore += 2;
+                scoreCount++;
+
+                if (customers > 100) totalScore += 9;
+                else if (customers > 50) totalScore += 5;
+                else totalScore += 2;
+                scoreCount++;
+
+                if (funding > 1000000) totalScore += 9;
+                else if (funding > 500000) totalScore += 5;
+                else totalScore += 2;
+                scoreCount++;
+
+                if (teamSize > 10) totalScore += 9;
+                else if (teamSize > 5) totalScore += 5;
+                else totalScore += 2;
+                scoreCount++;
+
+                if (runway > 12) totalScore += 9;
+                else if (runway > 6) totalScore += 5;
+                else totalScore += 2;
+                scoreCount++;
+            }
+
+            const averageScore = totalScore / scoreCount;
+
+            // Debug logging
+            console.log('Scoring Debug:');
+            console.log('Total Score:', totalScore);
+            console.log('Score Count:', scoreCount);
+            console.log('Average Score:', averageScore);
+            console.log('Business Profile:', profile);
+            console.log('Detailed Scores:', detailedScores);
+
+            // Stage mapping based on the framework
+            let stage = 'Ideation';
+            if (averageScore >= 8.01) stage = 'Scale';
+            else if (averageScore >= 7.81) stage = 'Growth → Scale';
+            else if (averageScore >= 6.26) stage = 'Growth';
+            else if (averageScore >= 6.01) stage = 'Early Traction → Growth';
+            else if (averageScore >= 4.71) stage = 'Early Traction';
+            else if (averageScore >= 4.41) stage = 'Validation → Early Traction';
+            else if (averageScore >= 3.16) stage = 'Validation';
+            else if (averageScore >= 2.81) stage = 'Ideation → Validation';
+            else stage = 'Ideation';
+
+            console.log('Calculated Stage:', stage);
+
+            // Apply caveats
+            if (answers.productReadiness === 'Idea or concept only') {
+                stage = 'Ideation';
+            }
+
+            if ((!answers.customers || parseFloat(answers.customers) === 0) && (!answers.revenue || parseFloat(answers.revenue) === 0)) {
+                stage = 'Ideation';
+            }
+
+            stageResult = {
+                stage: stage,
+                score: averageScore.toFixed(2),
+                profile: profile,
+                detailedScores: detailedScores,
+                thresholds: thresholds || null,
+                businessContext: {
+                    model: businessModel,
+                    region: region,
+                    type: businessType,
+                    industry: industry
+                },
+                totalScore: totalScore,
+                scoreCount: scoreCount
+            };
+
+            // Auto-redirect to stage-specific questions
+            startStageQuestions();
+        }
+
+        function startStageQuestions() {
+            // Hide initial form and results
+            document.getElementById('startupForm').style.display = 'none';
+            document.getElementById('results').style.display = 'none';
+            
+            // Go directly to stage questions without showing explanation page
+            proceedToStageQuestions();
+        }
+        
+        function proceedToStageQuestions() {
+            // Hide results and show form
+            document.getElementById('results').style.display = 'none';
+            document.getElementById('startupForm').style.display = 'block';
+            
+            // Update title
+            document.querySelector('h1').textContent = 'Startup Diagnostic - Stage-Specific Questions';
+            
+            // Map transition stages to base stages
+            const stageMapping = {
+                'Ideation': 'Ideation',
+                'Ideation → Validation': 'Ideation',
+                'Validation': 'Validation',
+                'Validation → Early Traction': 'Validation',
+                'Early Traction': 'Early Traction',
+                'Early Traction → Growth': 'Early Traction',
+                'Growth': 'Growth',
+                'Growth → Scale': 'Growth',
+                'Scale': 'Scale'
+            };
+            
+            const currentStage = stageMapping[stageResult.stage] || 'Ideation';
+            const stageQuestionsList = stageQuestions[currentStage];
+            
+            if (stageQuestionsList) {
+                totalStageSteps = stageQuestionsList.length;
+                currentStageStep = 1;
+                renderStageStep();
+            }
+        }
+
+        function renderStageStep() {
+            const stageMapping = {
+                'Ideation': 'Ideation',
+                'Ideation → Validation': 'Ideation',
+                'Validation': 'Validation',
+                'Validation → Early Traction': 'Validation',
+                'Early Traction': 'Early Traction',
+                'Early Traction → Growth': 'Early Traction',
+                'Growth': 'Growth',
+                'Growth → Scale': 'Growth',
+                'Scale': 'Scale'
+            };
+            
+            const currentStage = stageMapping[stageResult.stage] || 'Ideation';
+            const stageQuestionsList = stageQuestions[currentStage];
+            
+            if (!stageQuestionsList) return;
+            
+            const question = stageQuestionsList[currentStageStep - 1];
+            if (!question) return;
+            
+            const form = document.getElementById('startupForm');
+            form.style.display = 'block';
+            form.innerHTML = `
+                <div class="form-group">
+                    <label for="${question.name}">${question.label}</label>
+                    ${generateInput(question)}
+                </div>
+                <div class="button-row">
+                    ${currentStageStep > 1 ? '<button type="button" onclick="prevStageStep()">Back</button>' : '<div></div>'}
+                    ${currentStageStep < totalStageSteps ? '<button type="button" onclick="nextStageStep()">Continue</button>' : '<button type="button" onclick="submitAndFinish()">Submit & Finish</button>'}
+                </div>
+            `;
+            
+            // Update progress
+            const progress = (currentStageStep / totalStageSteps) * 100;
+            document.getElementById('progress').style.width = progress + '%';
+            document.getElementById('progress').parentElement.previousElementSibling.textContent = `Stage-Specific Question ${currentStageStep} of ${totalStageSteps}`;
+        }
+
+        function nextStageStep() {
+            saveStageAnswer();
+            if (currentStageStep < totalStageSteps) {
+                currentStageStep++;
+                renderStageStep();
+                // Auto-save progress for stage questions
+                saveProgress();
+            }
+        }
+
+        function prevStageStep() {
+            saveStageAnswer();
+            if (currentStageStep > 1) {
+                currentStageStep--;
+                renderStageStep();
+                // Auto-save progress for stage questions
+                saveProgress();
+            }
+        }
+
+        function saveStageAnswer() {
+            const stageMapping = {
+                'Ideation': 'Ideation',
+                'Ideation → Validation': 'Ideation',
+                'Validation': 'Validation',
+                'Validation → Early Traction': 'Validation',
+                'Early Traction': 'Early Traction',
+                'Early Traction → Growth': 'Early Traction',
+                'Growth': 'Growth',
+                'Growth → Scale': 'Growth',
+                'Scale': 'Scale'
+            };
+            
+            const currentStage = stageMapping[stageResult.stage] || 'Ideation';
+            const stageQuestionsList = stageQuestions[currentStage];
+            
+            if (!stageQuestionsList) return;
+            
+            const question = stageQuestionsList[currentStageStep - 1];
+            if (!question) return;
+            
+            const element = document.getElementById(question.name);
+            if (element) {
+                stageSpecificAnswers[question.name] = element.value;
+            }
+        }
+
+        function finishStageQuestions() {
+            saveStageAnswer();
+            // Auto-save progress before finishing
+            saveProgress();
+            showStageResults();
+        }
+
+        function submitAndFinish() {
+            // Save the final stage answer
+            saveStageAnswer();
+            
+            // Auto-save progress before finishing
+            saveProgress();
+            
+            // Submit to Google Sheets first
+            submitToGoogleSheets();
+            
+            // Then show the final results page
+            showStageResults();
+        }
+
+        function showStageResults() {
+            const form = document.getElementById('startupForm');
+            form.style.display = 'none';
+            
+            const results = document.getElementById('results');
+            results.style.display = 'block';
+            results.innerHTML = `
+                <div style="text-align: center; padding: 60px 20px; max-width: 600px; margin: 0 auto;">
+                    <div style="background: linear-gradient(135deg, #0D9488, #10B981); padding: 40px; border-radius: 16px; color: white; margin-bottom: 30px;">
+                        <h1 style="font-size: 36px; margin: 0 0 20px 0; font-weight: 700;">Thank You!</h1>
+                        <p style="font-size: 20px; margin: 0; opacity: 0.9;">You have successfully completed the Traction Hub Diagnostic</p>
+                    </div>
+                    
+                    <div style="background: #f8fafc; border: 2px solid #E5E7EB; border-radius: 12px; padding: 30px; margin-bottom: 30px;">
+                        <h2 style="color: #0D9488; font-size: 24px; margin: 0 0 15px 0;">What happens next</h2>
+                        <p style="color: #374151; font-size: 18px; line-height: 1.6; margin: 0 0 20px 0;">
+                            Your diagnostic data has been automatically submitted to our system. Our team will review your submission and follow-up within the next 48 hours with your tailored recommendations.
+                        </p>
+                        <div style="background: #F0FDF4; border-left: 4px solid #10B981; padding: 20px; border-radius: 4px; margin-bottom: 20px;">
+                            <p style="color: #047857; font-size: 16px; font-weight: 600; margin: 0;">
+                                Your data has been successfully submitted and will be processed by our team.
+                            </p>
+                        </div>
+                        <div style="background: #F0FDF4; border-left: 4px solid #10B981; padding: 20px; border-radius: 4px;">
+                            <p style="color: #047857; font-size: 16px; font-weight: 600; margin: 0;">
+                                You'll receive a personalised diagnostic report with specific recommendations and next steps tailored to your startup's stage.
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div style="text-align: center;">
+                        <button onclick="goHome()" style="background: #6B7280; color: white; border: none; padding: 15px 30px; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 600;">
+                            Home
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+
+        function submitToGoogleSheets() {
+            // Collect all data
+            const data = {
+                submissionDate: new Date().toLocaleDateString(),
+                timestamp: new Date().toISOString(),
+                founderName: answers.founderName || '',
+                email: answers.email || '',
+                companyName: answers.companyName || '',
+                companyWebsite: answers.companyWebsite || '',
+                calculatedStage: stageResult.stage,
+                overallScore: stageResult.score,
+                profile: stageResult.profile,
+                opportunitySolution: answers.opportunitySolution || '',
+                whyNow: answers.whyNow || '',
+                marketSizing: answers.marketSizing || '',
+                targetCustomer: answers.targetCustomer || '',
+                customers: answers.customers || '',
+                engagementQuality: answers.engagementQuality || '',
+                goToMarket: answers.goToMarket || '',
+                businessModel: answers.businessModel || '',
+                region: answers.region || '',
+                businessType: answers.businessType || '',
+                industry: answers.industry || '',
+                productReadiness: answers.productReadiness || '',
+                revenue: answers.revenue || '',
+                runway: answers.runway || '',
+                funding: answers.funding || '',
+                risksAssumptions: answers.risksAssumptions || '',
+                tractionSignals: answers.tractionSignals || '',
+                founderProfiles: answers.founderProfiles || '',
+                teamSize: answers.teamSize || '',
+                teamStory: answers.teamStory || '',
+                goals: answers.goals || '',
+                otherInformation: answers.otherInformation || '',
+                ...stageSpecificAnswers
+            };
+
+            // Show loading state only if we're not already showing results
+            const results = document.getElementById('results');
+            if (results.style.display === 'none' || results.innerHTML.trim() === '') {
+                const existingContent = results.innerHTML;
+                
+                results.innerHTML = existingContent + `
+                    <div class="success-message">
+                        <h3>Submitting to Google Sheets...</h3>
+                        <p>Please wait while we submit your data...</p>
+                    </div>
+                `;
+            }
+
+            // Replace with your Google Apps Script web app URL
+            const scriptUrl = 'https://script.google.com/macros/s/AKfycbx5FIulQupW6i3yTu7qOj0WLcXaFw_vbK8xUZ1iNhZ1zFvSl51ShamhENdEbjMjv-AB9A/exec';
+            
+            console.log('Submitting data:', data);
+            console.log('Script URL:', scriptUrl);
+            
+            // Try to bypass CORS with a different approach
+            const formData = new FormData();
+            formData.append('data', JSON.stringify(data));
+            
+            // Add a timestamp to prevent caching
+            const urlWithTimestamp = scriptUrl + '?t=' + Date.now();
+            
+            // Try a different approach - use a simple POST without complex headers
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = urlWithTimestamp;
+            form.target = 'hidden-iframe';
+            
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'data';
+            input.value = JSON.stringify(data);
+            form.appendChild(input);
+            
+            // Create hidden iframe to handle the response
+            const iframe = document.createElement('iframe');
+            iframe.name = 'hidden-iframe';
+            iframe.style.display = 'none';
+            document.body.appendChild(iframe);
+            
+            // Submit the form
+            document.body.appendChild(form);
+            form.submit();
+            
+            // Remove the form and iframe
+            setTimeout(() => {
+                document.body.removeChild(form);
+                document.body.removeChild(iframe);
+                
+                // Show success message (since we can't read the response due to CORS)
+                // Only show this if we're not already showing the final results page
+                if (results.style.display === 'none' || results.innerHTML.trim() === '') {
+                    results.innerHTML = existingContent + `
+                        <div class="success-message">
+                            <h3>✅ Data Submitted Successfully!</h3>
+                            <p><strong>Stage:</strong> ${stageResult.stage}</p>
+                            <p><strong>Score:</strong> ${stageResult.score}/10</p>
+                            <p><strong>Profile:</strong> ${stageResult.profile}</p>
+                            <p><strong>Company:</strong> ${answers.companyName || 'N/A'}</p>
+                            <p><strong>Email:</strong> ${answers.email || 'N/A'}</p>
+                            <p><strong>Revenue:</strong> $${answers.revenue || '0'}</p>
+                            <p><strong>Customers:</strong> ${answers.customers || '0'}</p>
+                            <p><strong>Funding:</strong> $${answers.funding || '0'}</p>
+                            <p><strong>Team Size:</strong> ${answers.teamSize || '1'}</p>
+                            <p><strong>Runway:</strong> ${answers.runway || '0'} months</p>
+                            <p><strong>Data has been submitted to Google Sheets.</strong></p>
+                            <p><em>Note: Due to browser security restrictions, we cannot confirm the response, but the data has been sent.</em></p>
+                        </div>
+                    `;
+                }
+            }, 2000);
+        }
+
+        // Initialize - show consent screen first
+        // initializeForm(); // This will be called after consent
+
+
+
+        function toggleHelp() {
+            const popup = document.getElementById('helpPopup');
+            popup.classList.toggle('show');
+        }
+
+        // Close help popup when clicking outside
+        document.addEventListener('click', function(event) {
+            const popup = document.getElementById('helpPopup');
+            const helpIcon = document.querySelector('.help-icon');
+            
+            if (popup.classList.contains('show') && 
+                !popup.contains(event.target) && 
+                !helpIcon.contains(event.target)) {
+                popup.classList.remove('show');
+            }
+        });
+
+        function showTerms() {
+            document.getElementById('consentScreen').style.display = 'none';
+            document.getElementById('mainForm').style.display = 'none';
+            document.getElementById('terms').style.display = 'block';
+            document.getElementById('framework').style.display = 'none';
+        }
+
+        function showFramework() {
+            document.getElementById('consentScreen').style.display = 'none';
+            document.getElementById('mainForm').style.display = 'none';
+            document.getElementById('framework').style.display = 'block';
+            document.getElementById('terms').style.display = 'none';
+        }
+
+        function showMainContent() {
+            document.getElementById('terms').style.display = 'none';
+            document.getElementById('framework').style.display = 'none';
+            document.getElementById('consentScreen').style.display = 'block';
+        }
+
+        function goHome() {
+            // Hide all sections
+            document.getElementById('terms').style.display = 'none';
+            document.getElementById('framework').style.display = 'none';
+            document.getElementById('mainForm').style.display = 'none';
+            document.getElementById('results').style.display = 'none';
+            // Show landing page
+            document.getElementById('consentScreen').style.display = 'block';
+        }
+
+
+        // Check for saved progress when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            checkForSavedProgress();
+        });
+    </script>
+</body>
+</html>
+
+
