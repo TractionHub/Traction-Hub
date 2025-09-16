@@ -131,6 +131,88 @@
             color: #374151;
         }
         
+        /* GDPR Consent Popup Styles */
+        .gdpr-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            display: none;
+        }
+        .gdpr-overlay.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .gdpr-popup {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+        .gdpr-popup h3 {
+            color: #0D9488;
+            margin: 0 0 20px 0;
+            font-size: 24px;
+        }
+        .gdpr-popup p {
+            color: #374151;
+            margin: 0 0 20px 0;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+        .gdpr-popup a {
+            color: #0D9488;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .gdpr-popup a:hover {
+            text-decoration: underline;
+        }
+        .gdpr-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 25px;
+        }
+        .gdpr-buttons button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            min-width: 120px;
+        }
+        .gdpr-accept {
+            background: #0D9488;
+            color: white;
+        }
+        .gdpr-accept:hover {
+            background: #0F766E;
+        }
+        .gdpr-reject {
+            background: #6B7280;
+            color: white;
+        }
+        .gdpr-reject:hover {
+            background: #4B5563;
+        }
+        
+        /* Framework link button hover effect */
+        .consent-details a:hover {
+            background: #10b981 !important;
+            color: white !important;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+        
         /* Mobile responsiveness for help icon */
         @media (max-width: 768px) {
             .help-icon {
@@ -148,6 +230,7 @@
             }
         }
     </style>
+    <script src="https://www.google.com/recaptcha/api.js?render=6LdrjssrAAAAAEMIf9S8RvmwDMJ3MPk_P407KQPi"></script>
 </head>
 <body>
     <!-- Help Icon -->
@@ -160,6 +243,21 @@
         <p>If you're having any trouble with the diagnostic tool, please don't hesitate to contact us:</p>
         <p><a href="mailto:chris.kennedy22.mail@gmail.com">chris.kennedy22.mail@gmail.com</a></p>
     </div>
+
+    <!-- GDPR Consent Popup -->
+    <div id="gdprOverlay" class="gdpr-overlay">
+        <div class="gdpr-popup">
+            <h3>Data Usage Consent</h3>
+            <p>This tool complies with GDPR requirements for data processing. For full details, please review our <a href="#" onclick="closeGDPRAndShowTerms(); return false;">Terms and Conditions & Privacy Policy</a>.</p>
+            <div class="gdpr-buttons">
+                <button class="gdpr-accept" onclick="acceptGDPR()">Accept</button>
+                <button class="gdpr-reject" onclick="rejectGDPR()">Reject</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden iframe for form submission -->
+    <iframe name="hidden_iframe" id="hidden_iframe" style="display:none;"></iframe>
 
     <div class="container">
         <div id="consentScreen" class="consent-screen">
@@ -189,10 +287,11 @@
             </div>
             
             <div class="consent-details">
-                <h3>Data usage:</h3>
-                <p>Your responses are used to generate your personalised diagnostic report and may be stored securely for up to 12 months. We may share data with trusted service providers under strict confidentiality agreements. This tool complies with GDPR requirements for data processing. For full details, please review our Terms and Conditions & Privacy Policy.</p>
-                <p>By proceeding, you agree to our <a href="#" onclick="showTerms(); return false;" style="color: #10b981; text-decoration: none;">Terms and Conditions & Privacy Policy</a>.</p>
-                <p><a href="#" onclick="showFramework(); return false;" style="color: #10b981; text-decoration: none;">Learn more about our startup framework and stages</a></p>
+                <p style="text-align: center; margin: 20px 0;">
+                    <a href="#" onclick="showFramework(); return false;" style="color: #10b981; text-decoration: none; font-weight: 600; font-size: 16px; padding: 12px 24px; background: #f0fdf4; border: 2px solid #10b981; border-radius: 8px; display: inline-block; transition: all 0.2s ease;">
+                        Click here to learn more about our startup framework and stages
+                    </a>
+                </p>
             </div>
             
             <div class="consent-buttons">
@@ -1172,6 +1271,11 @@
 
         // Initialize form
         function startForm() {
+            // Show GDPR consent popup first
+            document.getElementById('gdprOverlay').classList.add('show');
+        }
+
+        function startFormAfterConsent() {
             document.getElementById('consentScreen').style.display = 'none';
             document.getElementById('mainForm').style.display = 'block';
             initializeForm();
@@ -2077,47 +2181,13 @@
 
 
         function submitToGoogleSheets() {
-            // Collect all data
-            const data = {
-                submissionDate: new Date().toLocaleDateString(),
-                timestamp: new Date().toISOString(),
-                founderName: answers.founderName || '',
-                email: answers.email || '',
-                companyName: answers.companyName || '',
-                companyWebsite: answers.companyWebsite || '',
-                calculatedStage: stageResult.stage,
-                overallScore: stageResult.score,
-                profile: stageResult.profile,
-                opportunitySolution: answers.opportunitySolution || '',
-                whyNow: answers.whyNow || '',
-                marketSizing: answers.marketSizing || '',
-                targetCustomer: answers.targetCustomer || '',
-                customers: answers.customers || '',
-                engagementQuality: answers.engagementQuality || '',
-                goToMarket: answers.goToMarket || '',
-                businessModel: answers.businessModel || '',
-                region: answers.region || '',
-                businessType: answers.businessType || '',
-                industry: answers.industry || '',
-                productReadiness: answers.productReadiness || '',
-                revenue: answers.revenue || '',
-                runway: answers.runway || '',
-                funding: answers.funding || '',
-                risksAssumptions: answers.risksAssumptions || '',
-                tractionSignals: answers.tractionSignals || '',
-                founderProfiles: answers.founderProfiles || '',
-                teamSize: answers.teamSize || '',
-                teamStory: answers.teamStory || '',
-                goals: answers.goals || '',
-                otherInformation: answers.otherInformation || '',
-                ...stageSpecificAnswers
-            };
+            const SITE_KEY = "6LdrjssrAAAAAEMIf9S8RvmwDMJ3MPk_P407KQPi";
+            const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx5FIulQupW6i3yTu7qOj0WLcXaFw_vbK8xUZ1iNhZ1zFvSl51ShamhENdEbjMjv-AB9A/exec';
 
-            // Show loading state only if we're not already showing results
+            // Show loading state
             const results = document.getElementById('results');
             if (results.style.display === 'none' || results.innerHTML.trim() === '') {
                 const existingContent = results.innerHTML;
-                
                 results.innerHTML = existingContent + `
                     <div class="success-message">
                         <h3>Submitting to Google Sheets...</h3>
@@ -2126,68 +2196,102 @@
                 `;
             }
 
-            // Replace with your Google Apps Script web app URL
-            const scriptUrl = 'https://script.google.com/macros/s/AKfycbx5FIulQupW6i3yTu7qOj0WLcXaFw_vbK8xUZ1iNhZ1zFvSl51ShamhENdEbjMjv-AB9A/exec';
-            
-            console.log('Submitting data:', data);
-            console.log('Script URL:', scriptUrl);
-            
-            // Try to bypass CORS with a different approach
-            const formData = new FormData();
-            formData.append('data', JSON.stringify(data));
-            
-            // Add a timestamp to prevent caching
-            const urlWithTimestamp = scriptUrl + '?t=' + Date.now();
-            
-            // Try a different approach - use a simple POST without complex headers
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = urlWithTimestamp;
-            form.target = 'hidden-iframe';
-            
-            const input = document.createElement('input');
-            input.type = 'hidden';
-            input.name = 'data';
-            input.value = JSON.stringify(data);
-            form.appendChild(input);
-            
-            // Create hidden iframe to handle the response
-            const iframe = document.createElement('iframe');
-            iframe.name = 'hidden-iframe';
-            iframe.style.display = 'none';
-            document.body.appendChild(iframe);
-            
-            // Submit the form
-            document.body.appendChild(form);
-            form.submit();
-            
-            // Remove the form and iframe
-            setTimeout(() => {
-                document.body.removeChild(form);
-                document.body.removeChild(iframe);
-                
-                // Show success message (since we can't read the response due to CORS)
-                // Only show this if we're not already showing the final results page
-                if (results.style.display === 'none' || results.innerHTML.trim() === '') {
-                    results.innerHTML = existingContent + `
-                        <div class="success-message">
-                            <h3>✅ Data Submitted Successfully!</h3>
-                            <p><strong>Stage:</strong> ${stageResult.stage}</p>
-                            <p><strong>Score:</strong> ${stageResult.score}/10</p>
-                            <p><strong>Profile:</strong> ${stageResult.profile}</p>
-                            <p><strong>Company:</strong> ${answers.companyName || 'N/A'}</p>
-                            <p><strong>Email:</strong> ${answers.email || 'N/A'}</p>
-                            <p><strong>Revenue:</strong> $${answers.revenue || '0'}</p>
-                            <p><strong>Customers:</strong> ${answers.customers || '0'}</p>
-                            <p><strong>Funding:</strong> $${answers.funding || '0'}</p>
-                            <p><strong>Team Size:</strong> ${answers.teamSize || '1'}</p>
-                            <p><strong>Runway:</strong> ${answers.runway || '0'} months</p>
-                            <p><strong>Data has been submitted to Google Sheets.</strong></p>
-                            <p><em>Note: Due to browser security restrictions, we cannot confirm the response, but the data has been sent.</em></p>
-                        </div>
-                    `;
-                }
-            }, 2000);
+            grecaptcha.ready(function() {
+                grecaptcha.execute(SITE_KEY, { action: "submit_form" }).then(function(recaptchaToken) {
+                    // Collect all data
+                    const data = {
+                        submissionDate: new Date().toLocaleDateString(),
+                        timestamp: new Date().toISOString(),
+                        founderName: answers.founderName || '',
+                        email: answers.email || '',
+                        companyName: answers.companyName || '',
+                        companyWebsite: answers.companyWebsite || '',
+                        calculatedStage: stageResult.stage,
+                        overallScore: stageResult.score,
+                        profile: stageResult.profile,
+                        opportunitySolution: answers.opportunitySolution || '',
+                        whyNow: answers.whyNow || '',
+                        marketSizing: answers.marketSizing || '',
+                        targetCustomer: answers.targetCustomer || '',
+                        customers: answers.customers || '',
+                        engagementQuality: answers.engagementQuality || '',
+                        goToMarket: answers.goToMarket || '',
+                        businessModel: answers.businessModel || '',
+                        region: answers.region || '',
+                        businessType: answers.businessType || '',
+                        industry: answers.industry || '',
+                        productReadiness: answers.productReadiness || '',
+                        revenue: answers.revenue || '',
+                        runway: answers.runway || '',
+                        funding: answers.funding || '',
+                        risksAssumptions: answers.risksAssumptions || '',
+                        tractionSignals: answers.tractionSignals || '',
+                        founderProfiles: answers.founderProfiles || '',
+                        teamSize: answers.teamSize || '',
+                        teamStory: answers.teamStory || '',
+                        goals: answers.goals || '',
+                        otherInformation: answers.otherInformation || '',
+                        
+                        // reCAPTCHA security fields
+                        recaptchaToken: recaptchaToken,
+                        recaptchaAction: "submit_form",
+                        
+                        // Merge stage-specific answers
+                        ...stageSpecificAnswers
+                    };
+
+                    console.log('Submitting data with reCAPTCHA:', data);
+                    
+                    // Add timestamp to prevent caching
+                    const urlWithTimestamp = SCRIPT_URL + '?t=' + Date.now();
+                    
+                    // Create form for submission
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = urlWithTimestamp;
+                    form.target = 'hidden_iframe';
+                    
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'data';
+                    input.value = JSON.stringify(data);
+                    form.appendChild(input);
+                    
+                    // Submit the form
+                    document.body.appendChild(form);
+                    form.submit();
+                    
+                    // Remove the form after submission
+                    setTimeout(() => {
+                        document.body.removeChild(form);
+                        
+                        // Show success message
+                        if (results.style.display === 'none' || results.innerHTML.trim() === '') {
+                            results.innerHTML = existingContent + `
+                                <div class="success-message">
+                                    <h3>✅ Data Submitted Successfully!</h3>
+                                    <p><strong>Stage:</strong> ${stageResult.stage}</p>
+                                    <p><strong>Score:</strong> ${stageResult.score}/10</p>
+                                    <p><strong>Profile:</strong> ${stageResult.profile}</p>
+                                    <p><strong>Company:</strong> ${answers.companyName || 'N/A'}</p>
+                                    <p><strong>Email:</strong> ${answers.email || 'N/A'}</p>
+                                    <p><strong>Revenue:</strong> $${answers.revenue || '0'}</p>
+                                    <p><strong>Customers:</strong> ${answers.customers || '0'}</p>
+                                    <p><strong>Funding:</strong> $${answers.funding || '0'}</p>
+                                    <p><strong>Team Size:</strong> ${answers.teamSize || '1'}</p>
+                                    <p><strong>Runway:</strong> ${answers.runway || '0'} months</p>
+                                    <p><strong>Data has been submitted to Google Sheets with reCAPTCHA protection.</strong></p>
+                                    <p><em>Note: Due to browser security restrictions, we cannot confirm the response, but the data has been sent.</em></p>
+                                </div>
+                            `;
+                        }
+                    }, 2000);
+                }).catch(function(error) {
+                    console.error('reCAPTCHA error:', error);
+                    // Fallback: submit without reCAPTCHA if it fails
+                    alert('reCAPTCHA verification failed. Please try again.');
+                });
+            });
         }
 
         // Initialize - show consent screen first
@@ -2198,6 +2302,26 @@
         function toggleHelp() {
             const popup = document.getElementById('helpPopup');
             popup.classList.toggle('show');
+        }
+
+        // GDPR Consent Functions
+        function acceptGDPR() {
+            document.getElementById('gdprOverlay').classList.remove('show');
+            // Start the form after consent
+            startFormAfterConsent();
+        }
+
+        function rejectGDPR() {
+            document.getElementById('gdprOverlay').classList.remove('show');
+            // Redirect to external site or show message
+            window.location.href = 'https://google.com';
+        }
+
+        function closeGDPRAndShowTerms() {
+            // Close GDPR popup
+            document.getElementById('gdprOverlay').classList.remove('show');
+            // Show terms page
+            showTerms();
         }
 
         // Close help popup when clicking outside
@@ -2230,6 +2354,8 @@
             document.getElementById('terms').style.display = 'none';
             document.getElementById('framework').style.display = 'none';
             document.getElementById('consentScreen').style.display = 'block';
+            // Show GDPR popup when returning from terms
+            document.getElementById('gdprOverlay').classList.add('show');
         }
 
         function goHome() {
