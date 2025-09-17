@@ -230,7 +230,7 @@
             }
         }
     </style>
-    <script src="https://www.google.com/recaptcha/api.js?render=6LdrjssrAAAAAEMIf9S8RvmwDMJ3MPk_P407KQPi"></script>
+    <script src="https://www.google.com/recaptcha/api.js?render=6LeDWswrAAAAADVX7MwZTYY6rjcGHcIbetigTpIH"></script>
 </head>
 <body>
     <!-- Help Icon -->
@@ -616,8 +616,15 @@
         </div>
     </div>
     <script>
+        // Prevent duplicate submissions
+        let isSubmitting = false;
+        let lastClientRequestId = null;
+
+        // Minimal HTML-escape helper for any values echoed back to the page
+        const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
         let currentStep = 1;
-        let totalSteps = 26;
+        let totalSteps = 29;
         let answers = {};
         let stageResult = {};
         let stageSpecificAnswers = {};
@@ -773,66 +780,69 @@
                 "We have TAM/SAM/SOM + clear articulation of how we differ from existing solutions.",
                 "We deeply understand market dynamics, supported by robust TAM/SAM/SOM + competitor analysis."
             ]},
-            { id: 8, label: "Who is your target customer/user? Why are they a good fit for your solution?", name: "targetCustomer", type: "textarea", placeholder: "Describe your target customer..." },
-            { id: 9, label: "How many paying customers or active users do you currently have?", name: "customers", type: "number", placeholder: "e.g. 25", required: true },
-            { id: 10, label: "Roughly what % of your current customers or users are actively engaging with the product at least monthly?", name: "engagementQuality", type: "select", options: [
+            { id: 8, label: "Please provide any TAM/SAM/SOM metrics gathered during your market sizing research.", name: "tamSamSomMetrics", type: "textarea", placeholder: "Provide your TAM/SAM/SOM metrics..." },
+            { id: 9, label: "List your key competitors and outline how you differentiate your business from them.", name: "competitorAnalysis", type: "textarea", placeholder: "List competitors and differentiation..." },
+            { id: 10, label: "Who is your target customer/user? Why are they a good fit for your solution?", name: "targetCustomer", type: "textarea", placeholder: "Describe your target customer..." },
+            { id: 11, label: "How many paying customers or active users do you currently have?", name: "customers", type: "number", placeholder: "e.g. 25", required: true },
+            { id: 12, label: "Roughly what % of your current customers or users are actively engaging with the product at least monthly (based on what 'active' means in your business)?", name: "engagementQuality", type: "select", options: [
                 "Not applicable", "Less than 10%", "10–30%", "30–60%", "Over 60%"
             ], required: true },
-            { id: 11, label: "How are you currently acquiring your customers?", name: "goToMarket", type: "select", options: [
+            { id: 13, label: "How are you currently acquiring your customers?", name: "goToMarket", type: "select", options: [
                 "Haven't started acquiring yet", "Founder-led outreach or referrals", "Word of mouth / organic demand",
                 "Paid marketing or ads", "Partnerships / channel sales", "Dedicated sales team or GTM function"
             ], required: true },
-            { id: 12, label: "What best describes your primary business model?", name: "businessModel", type: "select", options: [
+            { id: 14, label: "What best describes your primary business model?", name: "businessModel", type: "select", options: [
                 "B2B (selling to businesses)", "B2C (selling to consumers)", "B2G (selling to government)",
                 "Marketplace (buyers & sellers)", "Direct-to-Consumer (D2C)", "Subscription (e.g., SaaS)",
                 "Consumer App", "Other (please specify)"
             ], required: true },
-            { id: 13, label: "Which region is your company primarily operating in?", name: "region", type: "select", options: [
+            { id: 15, label: "Which region is your company primarily operating in?", name: "region", type: "select", options: [
                 "North America (US, Canada)", "Western Europe (e.g. UK, Germany, France, Nordics etc.)",
                 "Australia & New Zealand", "Central & Eastern Europe", "Latin America", "Sub-Saharan Africa",
                 "Middle East & North Africa (MENA)", "South Asia (e.g. India, Pakistan)",
                 "Southeast Asia (e.g. Indonesia, Vietnam, Philippines)", "East Asia (e.g. China, Japan, Korea, Singapore)", "Other (please specify)"
             ], required: true },
-            { id: 14, label: "Which category best describes your business type?", name: "businessType", type: "select", options: [
+            { id: 16, label: "Which category best describes your business type?", name: "businessType", type: "select", options: [
                 "SaaS (Software as a Service)", "Marketplace (connecting buyers/sellers)", "E-commerce / DTC",
                 "Hardware / Devices", "Services (e.g. consulting, agency)", "Platform / API-based",
                 "Community or Content-led", "Other (please specify)"
             ], required: true },
-            { id: 15, label: "What industry are you in?", name: "industry", type: "select", options: [
+            { id: 17, label: "What industry are you in?", name: "industry", type: "select", options: [
                 "Software / SaaS", "Fintech / Insurtech", "Health / MedTech", "E-commerce / DTC",
                 "Deep Tech / AI / Robotics", "Education / EdTech", "Social Impact / Nonprofit", "Other (please specify)"
             ], required: true },
-            { id: 16, label: "What best describes the current state of your product?", name: "productReadiness", type: "select", options: [
+            { id: 18, label: "What best describes the current state of your product?", name: "productReadiness", type: "select", options: [
                 "Idea or concept only", "Wireframes / mockups", "MVP built (not in use)",
                 "MVP being tested with early users", "Live product with active users",
                 "Fully launched and scaled", "Not applicable / unknown"
             ], required: true },
-            { id: 17, label: "What is your total revenue in the past 12 months (USD)?", name: "revenue", type: "number", placeholder: "e.g. 25000", required: true },
-            { id: 18, label: "How many months of runway do you currently have based on your cash on hand and current burn?", name: "runway", type: "number", placeholder: "e.g. 6", step: "0.5", required: true },
-            { id: 19, label: "How much funding have you raised to date (USD)?", name: "funding", type: "number", placeholder: "e.g. 100000", required: true },
-            { id: 20, label: "Which of the following additional signals of traction or customer validation has your business achieved? (Select all that apply)", name: "tractionSignals", type: "checkbox", options: [
+            { id: 19, label: "What is your total revenue in the past 12 months (USD)?", name: "revenue", type: "number", placeholder: "e.g. 25000", required: true },
+            { id: 20, label: "How many months of runway do you currently have based on your cash on hand and current burn?", name: "runway", type: "number", placeholder: "e.g. 6", step: "0.5", required: true },
+            { id: 21, label: "How much funding have you raised to date (USD)?", name: "funding", type: "number", placeholder: "e.g. 100000", required: true },
+            { id: 22, label: "Which of the following additional signals of traction or customer validation has your business achieved? (Select all that apply)", name: "tractionSignals", type: "checkbox", options: [
                 "Pilot or beta programme completed with users", "Active user or customer engagement",
                 "Signed commercial or strategic agreements (LOIs, MOUs, etc.)", "Channel partner actively generating leads",
                 "10+ customer discovery interviews or UX tests", "Validation that changed product or GTM direction",
                 "Qualified waitlist with warm intent", "Inbound partner or ecosystem interest",
                 "Press, analyst, or ecosystem recognition", "Funnel metrics actively tracked", "None of the above"
             ]},
-            { id: 21, label: "Outline the backgrounds of the founders in your business. Why are you best placed to make this solution work?", name: "founderProfiles", type: "textarea", placeholder: "Describe founder backgrounds and fit..." },
-            { id: 22, label: "Including founders, how many people are currently on your team (full-time equivalents)?", name: "teamSize", type: "number", placeholder: "e.g. 3", min: "1", required: true },
-            { id: 23, label: "What's the story behind how you started working on this business?", name: "teamStory", type: "textarea", placeholder: "Tell the story of how you started..." },
-            { id: 24, label: "How are you currently identifying and addressing key risks or assumptions in the business?", name: "risksAssumptions", type: "select", options: [
+            { id: 23, label: "Please provide any relevant detail or proof of the traction signals you've selected (e.g. number of users, links, names of partners or programmes, interview formats, etc).", name: "tractionDetails", type: "textarea", placeholder: "Provide details of your traction signals..." },
+            { id: 24, label: "Outline the backgrounds of the founders in your business. Why are you best placed to make this solution work?", name: "founderProfiles", type: "textarea", placeholder: "Describe founder backgrounds and fit..." },
+            { id: 25, label: "Including founders, how many people are currently on your team (full-time equivalents)?", name: "teamSize", type: "number", placeholder: "e.g. 3", min: "1", required: true },
+            { id: 26, label: "What's the story behind how you started working on this business?", name: "teamStory", type: "textarea", placeholder: "Tell the story of how you started..." },
+            { id: 27, label: "How are you currently identifying and addressing key risks or assumptions in the business?", name: "risksAssumptions", type: "select", options: [
                 "We've started thinking through key risks and assumptions but haven't formalised anything yet.",
                 "We've identified a few major assumptions (e.g. demand, pricing, team), and are working out how to test them.",
                 "We're actively testing high-risk assumptions through user feedback, pilots, or experiments.",
                 "We've validated core assumptions and now track remaining risks with basic systems or tools.",
                 "We've built a systematic approach to monitoring and mitigating risks across functions (e.g. ops, product, compliance)."
             ]},
-            { id: 25, label: "What goals are you looking to achieve over the coming 6 months with your business?", name: "goals", type: "checkbox", options: [
+            { id: 28, label: "What goals are you looking to achieve over the coming 6 months with your business?", name: "goals", type: "checkbox", options: [
                 "Launch a product or MVP with early users", "Test and validate solution with real users",
                 "Acquire early customers or drive growth", "Raise investment", "Make key hires or build out the team",
                 "Improve financial planning or extend runway", "Understand my ideal customer or positioning", "Other (please specify)"
             ]},
-            { id: 26, label: "Anything else you think we should know about your business at this time?", name: "otherInformation", type: "textarea", placeholder: "Any additional information..." }
+            { id: 29, label: "Anything else you think we should know about your business at this time?", name: "otherInformation", type: "textarea", placeholder: "Any additional information..." }
         ];
 
         // Theme mapping for framework alignment (Framework V2 structure)
@@ -847,21 +857,21 @@
                     "We've identified a potential opportunity but need to validate its significance.",
                     "We've validated that customers experience this issue and it's worth solving.",
                     "We have clear evidence that this is a significant, validated opportunity with strong customer demand."
-                ]},
+                ], required: true },
                 { label: "How well have you defined how your solution addresses the identified opportunity or problem?", name: "ideation_proposed_solution", type: "select", options: [
                     "We haven't clearly defined our solution approach yet.",
                     "We have a basic solution concept but haven't tested its fit.",
                     "We've outlined our solution but need to validate it addresses the problem effectively.",
                     "We've tested our solution concept and refined it based on customer feedback.",
                     "We have a clearly defined solution that directly addresses the validated problem with evidence of customer fit."
-                ]},
+                ], required: true },
                 { label: "How well can you justify why now is the right time to build this solution?", name: "ideation_timing_market_readiness", type: "select", options: [
                     "We haven't considered market timing or readiness factors yet.",
                     "We think the timing might be right but haven't researched supporting factors.",
                     "We've identified some market shifts or changes that support our timing.",
                     "We have clear evidence of market readiness and timing factors.",
                     "We can demonstrate strong market timing with technological, regulatory, or market shift evidence."
-                ]},
+                ], required: true },
                 // 👥 Customer Theme
                 { label: "Which of the following best describes how you've defined and validated your initial customer segment?", name: "ideation_customer_profile", type: "select", options: [
                     "We haven't clearly defined our target customers yet.",
@@ -869,7 +879,7 @@
                     "We've had informal conversations with some potential customers.",
                     "We've conducted structured discovery with real potential customers and refined our understanding.",
                     "We have a clearly defined customer profile based on patterns validated through discovery conversations."
-                ]},
+                ], required: true },
                 // 🏁 Market and Competition Theme
                 { label: "How well have you estimated your Total Addressable Market (TAM), Serviceable Addressable Market (SAM), and Serviceable Obtainable Market (SOM)?", name: "ideation_market_sizing", type: "select", options: [
                     "We haven't done any market sizing analysis yet.",
@@ -877,14 +887,14 @@
                     "We've completed basic TAM/SAM/SOM analysis with some supporting data.",
                     "We have well-researched market sizing with validated assumptions.",
                     "We have comprehensive market sizing with multiple data sources and clear market entry strategy."
-                ]},
+                ], required: true },
                 { label: "How clearly have you identified key competitors and articulated your competitive differentiation?", name: "ideation_competitor_mapping", type: "select", options: [
                     "We haven't identified or analysed our competitors yet.",
                     "We know who some competitors are but haven't analysed their positioning.",
                     "We've mapped competitors but need to clarify our differentiation.",
                     "We have clear competitive analysis and understand our unique positioning.",
                     "We have comprehensive competitive intelligence and clear differentiation strategy."
-                ]},
+                ], required: true },
                 // 🧪 Product & Experience Theme
                 { label: "How clearly have you defined what your MVP needs to include — and why those features matter?", name: "ideation_mvp_scope", type: "select", options: [
                     "We haven't defined our MVP features or scope yet.",
@@ -892,42 +902,42 @@
                     "We have a rough MVP scope based on assumptions, not user input.",
                     "We've defined core features based on problem-solution fit and feasibility.",
                     "We've scoped our MVP tightly with a clear reason for each feature."
-                ]},
+                ], required: true },
                 { label: "How well-defined is your business model at this stage?", name: "ideation_business_model", type: "select", options: [
                     "We haven't focused on the business model yet.",
                     "We have a broad idea, but haven't defined what we're selling or how it generates revenue.",
                     "We're still exploring different business model options or customer segments.",
                     "We have an initial business model and revenue logic, but still need to validate key assumptions.",
                     "We have a clear business model – we know what we're selling, who pays, how they pay, and how it scales."
-                ]},
+                ], required: true },
                 { label: "How would you describe your current thinking around how to reach your early users or customers?", name: "ideation_gtm_thinking", type: "select", options: [
                     "We haven't thought much about GTM yet.",
                     "We have some rough GTM ideas but they're untested.",
                     "We've identified potential channels and pricing strategies to explore.",
                     "We've mapped early GTM hypotheses and started outlining experiments.",
                     "We have a clear GTM concept and a few experiments ready to test."
-                ]},
+                ], required: true },
                 { label: "How well-positioned is your current team to deliver on the technical and product execution needed at this stage?", name: "ideation_team_technical", type: "select", options: [
                     "No one has relevant technical experience or product execution history.",
                     "One founder has some technical/product exposure.",
                     "Some relevant experience, but light in delivery track record.",
                     "Strong technical/product capability in-house.",
                     "Deep, proven experience building and launching similar products."
-                ]},
+                ], required: true },
                 { label: "How well-positioned is your current team to deliver on the commercial and go-to-market execution needed at this stage?", name: "ideation_team_commercial", type: "select", options: [
                     "No commercial, sales, or growth experience in the team.",
                     "Some exposure to customer engagement or pitching.",
                     "One founder has decent experience in sales or marketing.",
                     "Clear experience driving early GTM or commercial traction.",
                     "Deep experience scaling early-stage GTM strategies."
-                ]},
+                ], required: true },
                 { label: "How clearly have you defined your fundraising goals and demonstrated why you're ready to raise?", name: "ideation_fundraising_readiness", type: "select", options: [
                     "Funding is not a priority for our business model at this stage.",
                     "No clear funding need, unclear investor type or use of funds.",
                     "Vague understanding of funding need, minimal clarity on use of funds.",
                     "Funding target loosely defined, early sense of investor type and use.",
                     "Clear fundraising goal with identified investor type and planned use."
-                ]},
+                ], required: true },
                 { label: "How clearly have you mapped out your near-term goals, milestones, and ways to track progress?", name: "ideation_milestones_progress", type: "select", options: [
                     "No milestones or future planning yet.",
                     "General ideas, but no clear timelines or owners.",
@@ -944,21 +954,21 @@
                     "We've seen repeat usage or buying intent from early users.",
                     "We've conducted informal testing or pilots but haven't gathered structured evidence yet.",
                     "We haven't tested the solution with real users yet."
-                ]},
+                ], required: true },
                 { label: "How would you describe the way potential customers are engaging with your solution or problem space?", name: "validation_icp_behaviour", type: "select", options: [
                     "We've had no meaningful engagement from potential customers yet.",
                     "We've had early chats but no strong evidence of interest.",
                     "A few have shown interest but it's inconsistent or unclear.",
                     "We're seeing repeated interest or intent signals from a clear profile.",
                     "We have strong and consistent behavioural signals that align with our ICP."
-                ]},
+                ], required: true },
                 { label: "How well do you understand which segments and channels are gaining the most traction — and how your offering compares to competitors?", name: "validation_segment_traction", type: "select", options: [
                     "We've done little to no tracking of segments, channels, or competitors yet.",
                     "We've seen some early signs of traction in certain segments or channels, but haven't dug deep.",
                     "We've started analysing which segments or channels work, and have noted some competitor patterns.",
                     "We have a solid handle on which segments and channels are performing, with some competitor insight.",
                     "We have deep insight into segment traction, channel effectiveness, and how we're positioned vs competitors."
-                ]},
+                ], required: true },
                 // 🧪 Product & Experience Theme
                 { label: "What have you learned from MVP testing — and how ready are you to deliver and support it at scale?", name: "validation_mvp_testing", type: "select", options: [
                     "We haven't tested the MVP yet, or it's too early to assess.",
@@ -966,56 +976,56 @@
                     "We've run some user testing and made basic improvements, but delivery systems still need work.",
                     "We've refined the MVP based on testing and have a clear roadmap for delivery and support.",
                     "MVP is well-tested with improvements made, and we're confident in our ability to deliver and support at scale."
-                ]},
+                ], required: true },
                 { label: "How ready are you to deliver your product at scale from a technical and operational standpoint?", name: "validation_product_delivery_readiness", type: "select", options: [
                     "We haven't assessed our technical or operational readiness for scale yet.",
                     "We've identified major technical or operational gaps that need addressing.",
                     "We've started addressing key technical or operational challenges.",
                     "We have most technical and operational systems in place for scale.",
                     "We're fully prepared technically and operationally to deliver at scale."
-                ]},
+                ], required: true },
                 { label: "How well-positioned are your internal systems and workflows to support broader scale?", name: "validation_tech_ops_readiness", type: "select", options: [
                     "We haven't assessed our internal systems or workflow readiness.",
                     "We have major gaps in our internal systems or workflows.",
                     "We've identified key system or workflow improvements needed.",
                     "We have most internal systems and workflows ready for scale.",
                     "Our internal systems and workflows are fully optimised for scale."
-                ]},
+                ], required: true },
                 { label: "How would you describe the experiments or strategies you've tested to find effective ways to reach your customers?", name: "validation_gtm_experimentation", type: "select", options: [
                     "We haven't run any GTM experiments yet.",
                     "We've run a few GTM tests but haven't learned much.",
                     "Some GTM experiments have shown promising signals.",
                     "We're seeing patterns around what works in messaging or channels.",
                     "We have clear learnings guiding our GTM strategy."
-                ]},
+                ], required: true },
                 { label: "How would you describe the user behaviour or traction signals you're currently seeing — and what they indicate?", name: "validation_traction_signals", type: "select", options: [
                     "We haven't seen meaningful engagement or usage patterns yet.",
                     "We've seen isolated user activity but not enough to identify a pattern.",
                     "Some early traction is emerging but it's unclear what it means.",
                     "We're seeing repeated usage or behaviours that align with our problem-solution fit.",
                     "We have consistent traction signals that clearly validate product–market alignment."
-                ]},
+                ], required: true },
                 { label: "Where do you currently stand in identifying and addressing key capability gaps (e.g. tech, marketing, operations)?", name: "validation_resource_gaps", type: "select", options: [
                     "We have major capability gaps and no clear plan to fill them.",
                     "We know we're missing key skills, but only starting to figure out next steps.",
                     "Some gaps exist, and we're loosely working on them.",
                     "Minor gaps remain — we've prioritised key hires or solutions.",
                     "We've mapped resourcing needs clearly and are actively filling them."
-                ]},
+                ], required: true },
                 { label: "Beyond your current revenue, have you mapped out a clear financial plan for growth — including your projected revenue, funding use, and any early signs of efficiency?", name: "validation_financial_planning", type: "select", options: [
                     "No financial projections or plans for funding use yet.",
                     "Basic ideas exist but unclear or disconnected from goals.",
                     "Have started modeling revenue and planning use of funds, but still rough.",
                     "Revenue projections and funding plan are defined with some tested assumptions.",
                     "Clear financial model with 12–18 month projections, allocation plan, and early efficiency metrics (CAC, payback)."
-                ]},
+                ], required: true },
                 { label: "How well prepared are you for raising your next round of funding? (Consider your pitch narrative, investor profile, funding goals, and supporting materials.)", name: "validation_fundraising_preparation", type: "select", options: [
                     "We haven't defined a narrative or target investor profile yet.",
                     "We've drafted a basic narrative but haven't tested or refined it.",
                     "We have a clear narrative and pitch, but still identifying the right investors.",
                     "We've defined our investor profile and have supporting pitch materials ready.",
                     "We're actively engaging investors with a strong, tested narrative and clear ask."
-                ]},
+                ], required: true },
                 { label: "How clearly have you defined your early targets (e.g. users, revenue, engagement) — and tested the assumptions that matter most right now (like demand or pricing)?", name: "validation_risk_assumption_review", type: "select", options: [
                     "We haven't defined clear targets or tested key assumptions yet.",
                     "We've defined a few targets, but they're vague and assumptions are mostly untested.",
@@ -1032,84 +1042,84 @@
                     "We have basic retention or usage data but limited analysis.",
                     "We track usage and retention systematically and review patterns.",
                     "We have a clear view of retention trends and identify expansion signals."
-                ]},
+                ], required: true },
                 { label: "Which customer segments are showing the strongest traction, and how are you responding to competitive shifts or market demand signals?", name: "early_traction_market_signals", type: "select", options: [
                     "We haven't identified clear pull from any segment yet.",
                     "Some signs of interest from certain segments, but it's early and inconsistent.",
                     "Clear pull from one or two segments, but we haven't adapted positioning or messaging yet.",
                     "Strong pull from specific segments, and we're beginning to adjust positioning.",
                     "Clear segment traction and refined positioning based on competitor moves and market dynamics."
-                ]},
+                ], required: true },
                 { label: "How well is your product performing with real users — and is your tech ready to scale with them?", name: "early_traction_product_usage", type: "select", options: [
                     "We're still collecting usage feedback and haven't addressed any scaling issues.",
                     "We've identified some issues from users or usage spikes, but haven't acted on them.",
                     "We've addressed surface-level bugs or UX issues, but deeper usage or scaling risks remain.",
                     "We've improved key UX friction points and resolved core tech bottlenecks.",
                     "Our product is resonating with users and our systems are handling growth without issues."
-                ]},
+                ], required: true },
                 { label: "How clearly have you defined your go-to-market system — including your sales/marketing funnel, channel tests, and how you're learning what resonates with customers?", name: "early_traction_gtm_execution", type: "select", options: [
                     "We haven't structured GTM efforts yet.",
                     "We're experimenting but don't have a clear system.",
                     "We have a basic funnel and run some GTM tests.",
                     "We actively learn from funnel data and messaging experiments.",
                     "We have a repeatable GTM system with clear insights by segment."
-                ]},
+                ], required: true },
                 { label: "What systems or processes have you established to support delivery and team scalability?", name: "early_traction_ops_scalability", type: "select", options: [
                     "No systems or defined processes yet.",
                     "Some informal processes in place, but inconsistent.",
                     "Defined lightweight systems or tools in early use.",
                     "Clear ownership of ops/CS/QA roles and basic delivery metrics tracked.",
                     "Processes and metrics (SLAs, NPS, resolution time) actively used to manage performance."
-                ]},
+                ], required: true },
                 { label: "How well have you addressed your startup's basic legal and compliance responsibilities?", name: "early_traction_legal_compliance", type: "select", options: [
                     "Haven't reviewed legal or compliance requirements.",
                     "Basic IP/contracts reviewed but nothing formal.",
                     "Some key documents in place (e.g. NDAs).",
                     "Legal docs mostly ready, and sector-specific compliance considered.",
                     "All key legal docs in place and compliance risks identified and addressed."
-                ]},
+                ], required: true },
                 { label: "How clearly can you see that users are getting value from your product — and moving toward becoming paying customers?", name: "early_traction_activation_monetization", type: "select", options: [
                     "We haven't defined what 'value' means yet.",
                     "Some users get value, but few convert to paying.",
                     "There's early signs of both value and conversion.",
                     "A decent % of users convert and stick.",
                     "Strong value delivery and reliable monetisation."
-                ]},
+                ], required: true },
                 { label: "What capability or capacity gaps could hold back your next phase of execution, and how are you addressing them?", name: "early_traction_capability_gaps", type: "select", options: [
                     "Team under pressure — struggling to deliver current roadmap.",
                     "Major gaps limiting progress — no clear plan to solve.",
                     "Clear capability gaps, actively hiring or partnering to fill them.",
                     "Minor gaps in specific roles or skills, already planning to address.",
                     "No major gaps — team is resourced and executing well."
-                ]},
+                ], required: true },
                 { label: "How are you building culture and supporting team performance as your team begins to scale?", name: "early_traction_people_culture", type: "select", options: [
                     "No real onboarding or cultural practices in place.",
                     "Ad hoc onboarding; no performance feedback yet.",
                     "Starting to define culture; some onboarding basics in place.",
                     "Onboarding process and informal feedback exist.",
                     "Strong culture-building; onboarding and feedback systems actively used."
-                ]},
+                ], required: true },
                 { label: "How well developed is your financial planning — including your revenue model and ability to forecast different paths forward?", name: "early_traction_financial_planning", type: "select", options: [
                     "No real forecasting or financial planning in place.",
                     "Very rough estimates; limited link to actual performance.",
                     "Have some projections and a working revenue model, but not updated regularly.",
                     "Forecasts are updated with real data; strategy includes burn and revenue streams.",
                     "Financial plan is dynamic — includes updated burn, revenue projections, and multiple scenarios."
-                ]},
+                ], required: true },
                 { label: "How well developed is your investment story and fundraising process? (Consider traction data, proof points, investor targeting, and outreach process.)", name: "early_traction_investment_narrative", type: "select", options: [
                     "We haven't started refining our story or identifying investors yet.",
                     "We've drafted our pitch narrative but have limited traction or proof points.",
                     "We've pulled together traction data and know the types of investors to target.",
                     "We have clear proof points and are actively targeting aligned investors with a defined outreach process.",
                     "We're engaging investors with a compelling narrative, solid metrics, and structured outreach."
-                ]},
+                ], required: true },
                 { label: "How clearly have you mapped out your growth priorities for the next few months and aligned your team around them?", name: "early_traction_strategic_planning", type: "select", options: [
                     "No clear priorities or alignment yet.",
                     "Some general priorities identified, but not shared across team.",
                     "Priorities defined and loosely tracked.",
                     "Priorities linked to goals and timelines.",
                     "Shared, tracked plan with clear ownership and alignment"
-                ]},
+                ], required: true },
                 { label: "How confident are you that your startup is ready to scale — from a tech, team, and operations standpoint?", name: "early_traction_scale_readiness", type: "select", options: [
                     "We haven't assessed scale readiness yet.",
                     "We see some blockers, but haven't addressed them.",
@@ -1125,77 +1135,77 @@
                     "We have some customer-facing support processes but they're inconsistent.",
                     "We've defined success outcomes and actively work to retain and expand customers.",
                     "We have a structured customer success system with retention and expansion goals, tactics, and tracking in place."
-                ]},
+                ], required: true },
                 { label: "How clearly are you differentiating from competitors in your positioning, and how often do you adapt your messaging as the market evolves?", name: "growth_competitive_differentiation", type: "select", options: [
                     "Our positioning isn't clearly differentiated and rarely updated.",
                     "We know who our competitors are, but our messaging doesn't strongly highlight our differences.",
                     "We highlight a few key differences, but our positioning needs sharpening.",
                     "We regularly track competitors and refine our messaging based on what we learn.",
                     "Our positioning is highly differentiated, updated often, and reinforced across GTM assets."
-                ]},
+                ], required: true },
                 { label: "How well is your product scaling — both in terms of features for different users and system reliability under growth?", name: "growth_product_depth", type: "select", options: [
                     "Our product isn't scaling well and we haven't adapted features or infra for growth.",
                     "We've made basic improvements, but still face UX or system issues under load.",
                     "We've started expanding features or scaling infra, but there are still blockers.",
                     "We're expanding features based on segment feedback and strengthening systems.",
                     "Our product is scaling confidently across user types, and our systems are stable under growth."
-                ]},
+                ], required: true },
                 { label: "How would you describe your current go-to-market engine — including your use of channels, ability to generate pipeline, and how effectively you're scaling GTM operations?", name: "growth_gtm_engine", type: "select", options: [
                     "GTM growth is still founder-led and inconsistent.",
                     "We have 1–2 working channels but no repeatable engine.",
                     "We have an emerging GTM system but it's not scalable yet.",
                     "We've built reliable GTM systems with early team/process scale.",
                     "We're confidently scaling pipeline, channels, and sales ops."
-                ]},
+                ], required: true },
                 { label: "How effectively are your systems supporting scalable operations and team decision-making?", name: "growth_systems_tooling", type: "select", options: [
                     "No systems or automation in place.",
                     "Some tools used manually, but no integration or dashboards.",
                     "Basic automation or dashboards in limited use.",
                     "Repeatable systems in place across functions with visibility into ops.",
                     "Automated systems, shared dashboards, and low manual effort across key teams."
-                ]},
+                ], required: true },
                 { label: "How prepared are you to manage regulatory and compliance risks across new markets or segments?", name: "growth_regulatory_compliance", type: "select", options: [
                     "No formal compliance planning.",
                     "Ad hoc legal posture reviews.",
                     "Identified key risks, with some compliance plans in place.",
                     "Compliance approach aligned to new markets or customer types.",
                     "Proactive compliance management across legal, regulatory, and security domains."
-                ]},
+                ], required: true },
                 { label: "How well are you tracking and using data to understand whether your user or revenue growth is sustainable?", name: "growth_sustainable_metrics", type: "select", options: [
                     "We don't track retention or user quality.",
                     "We track some metrics but don't use them regularly.",
                     "We track and review retention and growth signals but rarely act on them.",
                     "We actively use growth and retention trends to guide product decisions.",
                     "We track cohorts, NPS, and funnel signals to guide growth investments."
-                ]},
+                ], required: true },
                 { label: "How structured and scalable is your team's leadership, decision-making, and performance approach?", name: "growth_org_structure", type: "select", options: [
                     "No formal structure or leadership development.",
                     "Some informal leads but unclear roles or ownership.",
                     "Partial structure; limited leadership or feedback practices.",
                     "Defined structure and growing leadership maturity.",
                     "Strong leadership, structure, and performance culture."
-                ]},
+                ], required: true },
                 { label: "How strong is your financial discipline in terms of growth forecasting, revenue strategy, and cost control?", name: "growth_financial_discipline", type: "select", options: [
                     "Forecasting is ad hoc and we don't update projections consistently.",
                     "Some visibility into revenue and spend, but no real growth planning or controls.",
                     "Basic revenue model and cost tracking in place, but not tightly linked to growth.",
                     "Strong forecasting with cost controls and evolving monetisation model.",
                     "Robust discipline — 12–24 month forecasts, cost controls, and optimised monetisation tied to growth segments."
-                ]},
+                ], required: true },
                 { label: "How prepared are you for institutional fundraising and ongoing investor/board engagement? (Consider materials, metrics, board cadence, and reporting.)", name: "growth_institutional_fundraising", type: "select", options: [
                     "We haven't begun preparing for institutional investors or board engagement.",
                     "We've started gathering materials and discussing investor needs but still have key gaps.",
                     "We have the basics in place (e.g. deck, data room, investor conversations) and are engaging our board periodically.",
                     "We're actively engaging institutional investors and maintaining a consistent board/investor comms rhythm.",
                     "We're fully prepared for institutional rounds with clear reporting and board alignment."
-                ]},
+                ], required: true },
                 { label: "How clearly have you defined your top strategic priorities — and are they visible, owned, and tracked across the team?", name: "growth_strategic_focus", type: "select", options: [
                     "No clear strategic priorities yet.",
                     "Some priorities defined, but not shared widely or tracked.",
                     "Priorities defined, with informal tracking.",
                     "Priorities tracked with some ownership.",
                     "Priorities linked to OKRs or roadmap, with ownership and team-wide alignment."
-                ]},
+                ], required: true },
                 { label: "Have you begun developing a repeatable playbook for market, product, or segment expansion?", name: "growth_expansion_playbook", type: "select", options: [
                     "No expansion plans or activity yet.",
                     "Considering expansion options, but no structure.",
@@ -1211,84 +1221,84 @@
                     "We've started segmenting customers and capturing some success stories.",
                     "We have a structured approach to segment management and track customer outcomes.",
                     "We run a portfolio model with segment-based playbooks, tracked outcomes, and use cases that support market credibility."
-                ]},
+                ], required: true },
                 { label: "How clearly have you prioritised market segments across regions or verticals, and how are you tracking competitive shifts to inform positioning?", name: "scale_segment_strategy", type: "select", options: [
                     "We haven't clearly prioritised segments or tracked market dynamics.",
                     "We have basic segment ideas, but limited structure or consistency.",
                     "We're starting to prioritise segments regionally, but lack solid data or a consistent approach.",
                     "We've defined priority segments and adapt strategy with some monitoring of competitor/category shifts.",
                     "We've mapped core/emerging segments by region and track category shifts to refine global positioning."
-                ]},
+                ], required: true },
                 { label: "How prepared are you for international expansion in terms of market insights, sequencing, and local team enablement?", name: "scale_market_intelligence", type: "select", options: [
                     "We haven't explored international expansion or done any research.",
                     "We've done some initial thinking but no structured market analysis or planning.",
                     "We've identified priority markets and have begun some research or basic frameworks.",
                     "We've defined a market entry strategy and built frameworks for sequencing and risk.",
                     "We have a defined strategy, regular intelligence gathering, and enablement systems for local teams."
-                ]},
+                ], required: true },
                 { label: "How prepared is your product to scale as a platform — and deliver value reliably across a broad customer base?", name: "scale_platform_ecosystem", type: "select", options: [
                     "We're not yet thinking about extensibility, scale, or enterprise reliability.",
                     "We've made early efforts, but gaps remain in platform readiness and system stability.",
                     "We're working on APIs/integrations or infra improvements, but customer impact is inconsistent.",
                     "We've launched platform elements and improved system reliability for key segments.",
                     "Our product delivers consistent value at scale, with strong platform infrastructure and extensibility."
-                ]},
+                ], required: true },
                 { label: "How are you scaling your go-to-market strategy across different regions, channels, or customer types?", name: "scale_international_gtm", type: "select", options: [
                     "We haven't adapted GTM strategy for scale yet.",
                     "We've started thinking about channels or regions but not executing.",
                     "We're testing new GTM strategies in a few areas.",
                     "We're executing targeted strategies across multiple segments.",
                     "We have tailored GTM execution across markets, channels, and buyer types."
-                ]},
+                ], required: true },
                 { label: "How well have you institutionalised systems and processes to ensure consistent, high-quality delivery across regions and functions?", name: "scale_enterprise_systems", type: "select", options: [
                     "We're still mostly relying on ad hoc tools or informal processes across key functions.",
                     "We've introduced some systems and defined processes, but consistency and oversight vary by team or region.",
                     "We've implemented key systems and standardised delivery workflows, with some tracking in place.",
                     "Our systems, processes, and governance frameworks are consistent across functions, with performance tracking in place.",
                     "We have enterprise-grade systems, clearly defined governance, and full visibility into delivery quality and operations globally."
-                ]},
+                ], required: true },
                 { label: "How well does your team use centralized data to inform planning and decision-making at scale?", name: "scale_central_data_platform", type: "select", options: [
                     "We use centralized, reliable data and dashboards to support strategic planning, forecasting, and real-time decisions across functions.",
                     "We have dashboards and models in place for some areas (e.g., finance or GTM), but not consistently across the org.",
                     "We've started centralizing key data, but usage is mostly limited to reporting – not proactive planning.",
                     "We track some data manually or in silos, but we don't use it to guide strategic decisions.",
                     "We don't yet have centralized data infrastructure or planning models."
-                ]},
+                ], required: true },
                 { label: "How clearly are you identifying and improving the leverage points across your business — like sales efficiency, operational cost, or margins?", name: "scale_business_leverage", type: "select", options: [
                     "We haven't assessed these yet.",
                     "We've looked at some, but not tracked them consistently.",
                     "We've started tracking a few key ratios or team efficiencies.",
                     "We actively track cost/margin and adjust operations.",
                     "We benchmark and optimise across multiple business functions."
-                ]},
+                ], required: true },
                 { label: "How well are you evolving your leadership team, succession plans, and org structure for long-term scale?", name: "scale_org_design", type: "select", options: [
                     "No formal succession or leadership scaling efforts.",
                     "Informal structure with unclear ownership or long-term planning.",
                     "Early discussions on succession/org design.",
                     "Defined ownership + starting LTIP/talent planning.",
                     "Clear succession, LTIP, and scalable org in place."
-                ]},
+                ], required: true },
                 { label: "How would you describe your maturity in financial control, capital allocation, and forecasting sustainability at scale?", name: "scale_capital_allocation", type: "select", options: [
                     "No formal capital allocation or reporting processes yet.",
                     "Budgeting exists, but we don't track actuals vs. forecasts in detail.",
                     "Some controls in place — forecasts, board reporting, and audit prep started.",
                     "Strong systems — regular board packs, cap efficiency metrics, financial controls.",
                     "Full maturity — disciplined capital allocation, audit readiness, and efficient scaling with investor-grade reporting."
-                ]},
+                ], required: true },
                 { label: "How well-prepared is your company for long-term strategic options — and how effectively are you engaging your board on them?", name: "scale_strategic_optionality", type: "select", options: [
                     "No clear thinking on exits or strategic paths, minimal board engagement.",
                     "Some discussions started, but no structured planning.",
                     "Options loosely defined, early board involvement.",
                     "Defined strategic paths, regular board input.",
                     "Strategic paths planned with metrics and active board alignment"
-                ]},
+                ], required: true },
                 { label: "How intentionally are you using partnerships or acquisitions to accelerate scale?", name: "scale_inorganic_growth", type: "select", options: [
                     "We're actively executing strategic partnerships or acquisitions with structured frameworks in place (e.g., due diligence, integration, success metrics).",
                     "We've identified potential partners or targets and are preparing internal capabilities to act.",
                     "We're exploring inorganic options but haven't made structured plans yet.",
                     "We aren't currently pursuing partnerships or M&A as part of our growth strategy.",
                     "We don't see partnerships or acquisitions playing a role for us in the foreseeable future."
-                ]}
+                ], required: true }
             ]
         };
 
@@ -1503,6 +1513,51 @@
                 // Check if "Other" is selected but no value provided
                 if (currentQuestion.type === 'select' && element.value.includes('Other')) {
                     const otherInput = document.getElementById(currentQuestion.name + '_other');
+                    if (otherInput && otherInput.style.display !== 'none' && !otherInput.value.trim()) {
+                        alert('Please specify your "Other" option.');
+                        return false;
+                    }
+                }
+            }
+            
+            return true;
+        }
+
+        function validateStageQuestion() {
+            const stageMapping = {
+                'Ideation': 'Ideation',
+                'Ideation → Validation': 'Ideation',
+                'Validation': 'Validation',
+                'Validation → Early Traction': 'Validation',
+                'Early Traction': 'Early Traction',
+                'Early Traction → Growth': 'Early Traction',
+                'Growth': 'Growth',
+                'Growth → Scale': 'Growth',
+                'Scale': 'Scale'
+            };
+            
+            const currentStage = stageMapping[stageResult.stage] || 'Ideation';
+            const stageQuestionsList = stageQuestions[currentStage];
+            
+            if (!stageQuestionsList) return true;
+            
+            const question = stageQuestionsList[currentStageStep - 1];
+            if (!question) return true;
+            
+            // Only validate if the question is marked as required
+            if (question.required) {
+                const element = document.getElementById(question.name);
+                if (!element) return true;
+                
+                if (!element.value.trim()) {
+                    alert('This field is required.');
+                    element.focus();
+                    return false;
+                }
+                
+                // Check if "Other" is selected but no value provided
+                if (question.type === 'select' && element.value.includes('Other')) {
+                    const otherInput = document.getElementById(question.name + '_other');
                     if (otherInput && otherInput.style.display !== 'none' && !otherInput.value.trim()) {
                         alert('Please specify your "Other" option.');
                         return false;
@@ -2080,12 +2135,12 @@
             form.style.display = 'block';
             form.innerHTML = `
                 <div class="form-group">
-                    <label for="${question.name}">${question.label}</label>
+                    <label for="${question.name}" class="${question.required ? 'required' : ''}">${question.label}</label>
                     ${generateInput(question)}
                 </div>
                 <div class="button-row">
                     ${currentStageStep > 1 ? '<button type="button" onclick="prevStageStep()">Back</button>' : '<div></div>'}
-                    ${currentStageStep < totalStageSteps ? '<button type="button" onclick="nextStageStep()">Continue</button>' : '<button type="button" onclick="submitAndFinish()">Submit & Finish</button>'}
+                    ${currentStageStep < totalStageSteps ? '<button type="button" onclick="nextStageStep()">Continue</button>' : '<button id="submitBtn" type="button" onclick="submitAndFinish()">Submit &amp; Finish</button>'}
                 </div>
             `;
             
@@ -2096,6 +2151,11 @@
         }
 
         function nextStageStep() {
+            // Validate current stage question before proceeding
+            if (!validateStageQuestion()) {
+                return;
+            }
+            
             saveStageAnswer();
             if (currentStageStep < totalStageSteps) {
                 currentStageStep++;
@@ -2150,6 +2210,11 @@
         }
 
         function submitAndFinish() {
+            // Validate current stage question before finishing
+            if (!validateStageQuestion()) {
+                return;
+            }
+            
             // Save the final stage answer
             saveStageAnswer();
             
@@ -2204,12 +2269,21 @@
 
 
         function submitToGoogleSheets() {
-            const SITE_KEY = "6LdrjssrAAAAAEMIf9S8RvmwDMJ3MPk_P407KQPi";
-            const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwO9pQeCicHK2GL0vanC8Ibw66hGKe69xbtHM19TTTBEY8WjqrVXGkObzo1CHagMlKkMg/exec';
+            // Hard guard against multiple fires
+            if (isSubmitting) return;
+            isSubmitting = true;
 
-            // Show loading state
+            // Disable the submit button to block double-clicks (adjust the id if different)
+            const btn = document.getElementById('submitBtn');
+            if (btn) { btn.disabled = true; btn.textContent = 'Submitting...'; }
+
+            // IMPORTANT: set your current, working Apps Script Web App URL here
+            const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwM6u3zzzF76tqvc4LrmRON0y_M4sH_UsL_f3Bo8vQWxGQmES47TXlBXCLBJBxBPPozTg/exec'; // e.g. https://script.google.com/macros/s/AKfyc.../exec
+            const SITE_KEY   = '6LeDWswrAAAAADVX7MwZTYY6rjcGHcIbetigTpIH';
+
+            // Optional: show a lightweight "submitting..." state
             const results = document.getElementById('results');
-            if (results.style.display === 'none' || results.innerHTML.trim() === '') {
+            if (results && (results.style.display === 'none' || results.innerHTML.trim() === '')) {
                 const existingContent = results.innerHTML;
                 results.innerHTML = existingContent + `
                     <div class="success-message">
@@ -2219,100 +2293,106 @@
                 `;
             }
 
-            grecaptcha.ready(function() {
-                grecaptcha.execute(SITE_KEY, { action: "submit_form" }).then(function(recaptchaToken) {
-                    // Collect all data
+            // Generate a client-side idempotency key (server will dedupe using this)
+            const clientRequestId = (crypto.randomUUID && crypto.randomUUID())
+                ? crypto.randomUUID()
+                : (Date.now() + '-' + Math.random().toString(16).slice(2));
+            lastClientRequestId = clientRequestId;
+
+            // Get a reCAPTCHA v3 token, then build & submit the payload via hidden iframe
+            grecaptcha.ready(function () {
+                grecaptcha.execute(SITE_KEY, { action: 'submit_form' }).then(function (recaptchaToken) {
+
+                    // Collect your existing state objects/vars:
+                    // - answers: the common answers object you already build
+                    // - stageResult: contains stageResult.stage, stageResult.score, stageResult.profile
+                    // - stageSpecificAnswers: per-stage flat keys (already prepared in your flow)
+
                     const data = {
+                        // Meta
                         submissionDate: new Date().toLocaleDateString(),
                         timestamp: new Date().toISOString(),
+
+                        // Common fields (keep exactly as you already collect them)
                         founderName: answers.founderName || '',
                         email: answers.email || '',
                         companyName: answers.companyName || '',
                         companyWebsite: answers.companyWebsite || '',
+
                         calculatedStage: stageResult.stage,
                         overallScore: stageResult.score,
                         profile: stageResult.profile,
+
                         opportunitySolution: answers.opportunitySolution || '',
                         whyNow: answers.whyNow || '',
                         marketSizing: answers.marketSizing || '',
+                        tamSamSomMetrics: answers.tamSamSomMetrics || '',
+                        competitorAnalysis: answers.competitorAnalysis || '',
                         targetCustomer: answers.targetCustomer || '',
-                        customers: answers.customers || '',
-                        engagementQuality: answers.engagementQuality || '',
-                        goToMarket: answers.goToMarket || '',
                         businessModel: answers.businessModel || '',
                         region: answers.region || '',
                         businessType: answers.businessType || '',
                         industry: answers.industry || '',
-                        productReadiness: answers.productReadiness || '',
                         revenue: answers.revenue || '',
-                        runway: answers.runway || '',
+                        customers: answers.customers || '',
                         funding: answers.funding || '',
-                        risksAssumptions: answers.risksAssumptions || '',
-                        tractionSignals: answers.tractionSignals || '',
-                        founderProfiles: answers.founderProfiles || '',
                         teamSize: answers.teamSize || '',
+                        runway: answers.runway || '',
+                        productReadiness: answers.productReadiness || '',
+                        risksAssumptions: answers.risksAssumptions || '',
+                        engagementQuality: answers.engagementQuality || '',
+                        goToMarket: answers.goToMarket || '',
+                        tractionSignals: answers.tractionSignals || '',
+                        tractionDetails: answers.tractionDetails || '',
+                        founderProfiles: answers.founderProfiles || '',
                         teamStory: answers.teamStory || '',
                         goals: answers.goals || '',
                         otherInformation: answers.otherInformation || '',
-                        
-                        // reCAPTCHA security fields
+
+                        // Security
                         recaptchaToken: recaptchaToken,
-                        recaptchaAction: "submit_form",
-                        
-                        // Merge stage-specific answers
+                        recaptchaAction: 'submit_form',
+                        authToken: 'REPLACE_WITH_YOUR_SHARED_SECRET',   // must match Apps Script Script Property AUTH_TOKEN
+                        clientRequestId,                                 // idempotency key
+
+                        // Merge in stage-specific answers (flat keys)
                         ...stageSpecificAnswers
                     };
 
-                    console.log('Submitting data with reCAPTCHA:', data);
-                    
-                    // Add timestamp to prevent caching
-                    const urlWithTimestamp = SCRIPT_URL + '?t=' + Date.now();
-                    
-                    // Create form for submission
+                    // Submit via hidden iframe with a cache-buster to avoid any caching
                     const form = document.createElement('form');
                     form.method = 'POST';
-                    form.action = urlWithTimestamp;
+                    form.action = SCRIPT_URL + '?t=' + Date.now();
                     form.target = 'hidden_iframe';
-                    
+
                     const input = document.createElement('input');
                     input.type = 'hidden';
                     input.name = 'data';
                     input.value = JSON.stringify(data);
                     form.appendChild(input);
-                    
-                    // Submit the form
+
                     document.body.appendChild(form);
                     form.submit();
-                    
-                    // Remove the form after submission
+
+                    // Optional: re-enable UI after a few seconds if you want users to try again
                     setTimeout(() => {
-                        document.body.removeChild(form);
-                        
-                        // Show success message
-                        if (results.style.display === 'none' || results.innerHTML.trim() === '') {
-                            results.innerHTML = existingContent + `
-                                <div class="success-message">
-                                    <h3>✅ Data Submitted Successfully!</h3>
-                                    <p><strong>Stage:</strong> ${stageResult.stage}</p>
-                                    <p><strong>Score:</strong> ${stageResult.score}/10</p>
-                                    <p><strong>Profile:</strong> ${stageResult.profile}</p>
-                                    <p><strong>Company:</strong> ${answers.companyName || 'N/A'}</p>
-                                    <p><strong>Email:</strong> ${answers.email || 'N/A'}</p>
-                                    <p><strong>Revenue:</strong> $${answers.revenue || '0'}</p>
-                                    <p><strong>Customers:</strong> ${answers.customers || '0'}</p>
-                                    <p><strong>Funding:</strong> $${answers.funding || '0'}</p>
-                                    <p><strong>Team Size:</strong> ${answers.teamSize || '1'}</p>
-                                    <p><strong>Runway:</strong> ${answers.runway || '0'} months</p>
-                                    <p><strong>Data has been submitted to Google Sheets with reCAPTCHA protection.</strong></p>
-                                    <p><em>Note: Due to browser security restrictions, we cannot confirm the response, but the data has been sent.</em></p>
-                                </div>
-                            `;
-                        }
-                    }, 2000);
-                }).catch(function(error) {
-                    console.error('reCAPTCHA error:', error);
-                    // Fallback: submit without reCAPTCHA if it fails
-                    alert('reCAPTCHA verification failed. Please try again.');
+                        if (btn) btn.disabled = false;
+                        isSubmitting = false;
+                    }, 6000);
+
+                    // (Optional) Replace any success-echo UI with escaped values to avoid XSS
+                    if (results && results.innerHTML.indexOf('Data Submitted Successfully') === -1) {
+                        results.innerHTML += `
+                            <div class="success-message">
+                                <h3>✅ Data Submitted (sent to Google Sheets)</h3>
+                                <p><strong>Stage:</strong> ${esc(stageResult.stage)}</p>
+                                <p><strong>Score:</strong> ${esc(stageResult.score)}/10</p>
+                                <p><strong>Profile:</strong> ${esc(stageResult.profile)}</p>
+                                <p><strong>Company:</strong> ${esc(answers.companyName || 'N/A')}</p>
+                                <p><strong>Email:</strong> ${esc(answers.email || 'N/A')}</p>
+                            </div>
+                        `;
+                    }
                 });
             });
         }
@@ -2397,4 +2477,6 @@
     </script>
 </body>
 </html>
+
+
 
