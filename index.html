@@ -613,7 +613,7 @@
     </div>
     <script>
         // Constants
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyuiK3HbChUT9Hlkiq9AeBgqrtTbf4x4uOBsQMn-hVlZF0iGG2FrwpgbhglN4T9ct8Qfw/exec';
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbynnQqdUb_CWu2dIWS1BBIDjZZmbg-vdnT1Omi-oSXU/dev';
         
         // Prevent duplicate submissions
         let isSubmitting = false; // ensure single in-flight submit
@@ -2212,7 +2212,7 @@
             if (!validateStageQuestion()) return;
             saveStageAnswer();
             saveProgress();
-
+            
             const ok = await submitToGoogleSheets();
             if (ok) {
                 showStageResults(); // your existing success UI
@@ -2270,62 +2270,61 @@
 
             try {
                 // Build payload from your state objects
-                const data = {
-                    submissionDate: new Date().toLocaleDateString(),
-                    timestamp: new Date().toISOString(),
+                    const data = {
+                        submissionDate: new Date().toLocaleDateString(),
+                        timestamp: new Date().toISOString(),
 
-                    founderName: answers.founderName || '',
-                    email: answers.email || '',
-                    companyName: answers.companyName || '',
-                    companyWebsite: answers.companyWebsite || '',
+                        founderName: answers.founderName || '',
+                        email: answers.email || '',
+                        companyName: answers.companyName || '',
+                        companyWebsite: answers.companyWebsite || '',
 
-                    calculatedStage: stageResult.stage,
-                    overallScore: stageResult.score,
-                    profile: stageResult.profile,
+                        calculatedStage: stageResult.stage,
+                        overallScore: stageResult.score,
+                        profile: stageResult.profile,
 
-                    opportunitySolution: answers.opportunitySolution || '',
-                    whyNow: answers.whyNow || '',
-                    marketSizing: answers.marketSizing || '',
+                        opportunitySolution: answers.opportunitySolution || '',
+                        whyNow: answers.whyNow || '',
+                        marketSizing: answers.marketSizing || '',
                     tamSamSomMetrics: answers.tamSamSomMetrics || '',
                     competitorAnalysis: answers.competitorAnalysis || '',
-                    targetCustomer: answers.targetCustomer || '',
-                    businessModel: answers.businessModel || '',
-                    region: answers.region || '',
-                    businessType: answers.businessType || '',
-                    industry: answers.industry || '',
-                    revenue: answers.revenue || '',
+                        targetCustomer: answers.targetCustomer || '',
+                        businessModel: answers.businessModel || '',
+                        region: answers.region || '',
+                        businessType: answers.businessType || '',
+                        industry: answers.industry || '',
+                        revenue: answers.revenue || '',
                     customers: answers.customers || '',
-                    funding: answers.funding || '',
+                        funding: answers.funding || '',
                     teamSize: answers.teamSize || '',
                     runway: answers.runway || '',
                     productReadiness: answers.productReadiness || '',
-                    risksAssumptions: answers.risksAssumptions || '',
+                        risksAssumptions: answers.risksAssumptions || '',
                     engagementQuality: answers.engagementQuality || '',
                     goToMarket: answers.goToMarket || '',
-                    tractionSignals: answers.tractionSignals || '',
+                        tractionSignals: answers.tractionSignals || '',
                     tractionDetails: answers.tractionDetails || '',
-                    founderProfiles: answers.founderProfiles || '',
-                    teamStory: answers.teamStory || '',
-                    goals: answers.goals || '',
-                    otherInformation: answers.otherInformation || '',
-
+                        founderProfiles: answers.founderProfiles || '',
+                        teamStory: answers.teamStory || '',
+                        goals: answers.goals || '',
+                        otherInformation: answers.otherInformation || '',
+                        
                     // Include stage-specific answers last
-                    ...stageSpecificAnswers
-                };
+                        ...stageSpecificAnswers
+                    };
 
                 const res = await fetch(SCRIPT_URL, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
                     credentials: 'omit',
-                    body: JSON.stringify(data)
+                    body: 'data=' + encodeURIComponent(JSON.stringify(data))
                 });
 
                 const json = await res.json().catch(() => null);
-
                 if (json && json.success) {
                     return true;
                 } else {
-                    const msg = (json && (json.error || json.detail) + (json.score!=null? ` (score ${json.score})` : '')) || `HTTP ${res.status}`;
+                    const msg = (json && (json.error || json.detail)) || `HTTP ${res.status}`;
                     showSubmissionError(msg);
                     return false;
                 }
@@ -2425,29 +2424,3 @@
     </script>
 </body>
 </html>
-
-
-      document.getElementById('framework').style.display = 'none';
-            document.getElementById('consentScreen').style.display = 'block';
-        }
-
-        function goHome() {
-            // Hide all sections
-            document.getElementById('terms').style.display = 'none';
-            document.getElementById('framework').style.display = 'none';
-            document.getElementById('mainForm').style.display = 'none';
-            document.getElementById('results').style.display = 'none';
-            // Show landing page
-            document.getElementById('consentScreen').style.display = 'block';
-        }
-
-
-        // Check for saved progress when page loads
-        document.addEventListener('DOMContentLoaded', function() {
-            checkForSavedProgress();
-        });
-    </script>
-</body>
-</html>
-
-
