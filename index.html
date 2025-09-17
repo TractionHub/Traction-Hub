@@ -2268,133 +2268,93 @@
         }
 
 
-        function submitToGoogleSheets() {
-            // Hard guard against multiple fires
+        async function submitToGoogleSheets() {
             if (isSubmitting) return;
             isSubmitting = true;
 
-            // Disable the submit button to block double-clicks (adjust the id if different)
             const btn = document.getElementById('submitBtn');
             if (btn) { btn.disabled = true; btn.textContent = 'Submitting...'; }
 
-            // IMPORTANT: set your current, working Apps Script Web App URL here
-            const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwM6u3zzzF76tqvc4LrmRON0y_M4sH_UsL_f3Bo8vQWxGQmES47TXlBXCLBJBxBPPozTg/exec'; // e.g. https://script.google.com/macros/s/AKfyc.../exec
+            const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxL7bBNm0Zv27dxzF1IyBGlNADEk_ykDtarfIcLz7zSIM2rQrO2xg7AvDKwE9I4KBUepg/exec'; // must be the latest deploy
             const SITE_KEY   = '6LeDWswrAAAAADVX7MwZTYY6rjcGHcIbetigTpIH';
 
-            // Optional: show a lightweight "submitting..." state
-            const results = document.getElementById('results');
-            if (results && (results.style.display === 'none' || results.innerHTML.trim() === '')) {
-                const existingContent = results.innerHTML;
-                results.innerHTML = existingContent + `
-                    <div class="success-message">
-                        <h3>Submitting to Google Sheets...</h3>
-                        <p>Please wait while we submit your data...</p>
-                    </div>
-                `;
-            }
-
-            // Generate a client-side idempotency key (server will dedupe using this)
-            const clientRequestId = (crypto.randomUUID && crypto.randomUUID())
-                ? crypto.randomUUID()
-                : (Date.now() + '-' + Math.random().toString(16).slice(2));
+            // Client idempotency key (optional)
+            const clientRequestId = (crypto.randomUUID && crypto.randomUUID()) ? crypto.randomUUID()
+                                         : (Date.now() + '-' + Math.random().toString(16).slice(2));
             lastClientRequestId = clientRequestId;
 
-            // Get a reCAPTCHA v3 token, then build & submit the payload via hidden iframe
-            grecaptcha.ready(function () {
-                grecaptcha.execute(SITE_KEY, { action: 'submit_form' }).then(function (recaptchaToken) {
+            try {
+                // Get token
+                await grecaptcha.ready();
+                const recaptchaToken = await grecaptcha.execute(SITE_KEY, { action: 'submit_form' });
 
-                    // Collect your existing state objects/vars:
-                    // - answers: the common answers object you already build
-                    // - stageResult: contains stageResult.stage, stageResult.score, stageResult.profile
-                    // - stageSpecificAnswers: per-stage flat keys (already prepared in your flow)
+                // Build payload (unchanged fields)
+                const data = {
+                    submissionDate: new Date().toLocaleDateString(),
+                    timestamp: new Date().toISOString(),
 
-                    const data = {
-                        // Meta
-                        submissionDate: new Date().toLocaleDateString(),
-                        timestamp: new Date().toISOString(),
+                    founderName: answers.founderName || '',
+                    email: answers.email || '',
+                    companyName: answers.companyName || '',
+                    companyWebsite: answers.companyWebsite || '',
 
-                        // Common fields (keep exactly as you already collect them)
-                        founderName: answers.founderName || '',
-                        email: answers.email || '',
-                        companyName: answers.companyName || '',
-                        companyWebsite: answers.companyWebsite || '',
+                    calculatedStage: stageResult.stage,
+                    overallScore: stageResult.score,
+                    profile: stageResult.profile,
 
-                        calculatedStage: stageResult.stage,
-                        overallScore: stageResult.score,
-                        profile: stageResult.profile,
+                    opportunitySolution: answers.opportunitySolution || '',
+                    whyNow: answers.whyNow || '',
+                    marketSizing: answers.marketSizing || '',
+                    tamSamSomMetrics: answers.tamSamSomMetrics || '',
+                    competitorAnalysis: answers.competitorAnalysis || '',
+                    targetCustomer: answers.targetCustomer || '',
+                    businessModel: answers.businessModel || '',
+                    region: answers.region || '',
+                    businessType: answers.businessType || '',
+                    industry: answers.industry || '',
+                    revenue: answers.revenue || '',
+                    customers: answers.customers || '',
+                    funding: answers.funding || '',
+                    teamSize: answers.teamSize || '',
+                    runway: answers.runway || '',
+                    productReadiness: answers.productReadiness || '',
+                    risksAssumptions: answers.risksAssumptions || '',
+                    engagementQuality: answers.engagementQuality || '',
+                    goToMarket: answers.goToMarket || '',
+                    tractionSignals: answers.tractionSignals || '',
+                    tractionDetails: answers.tractionDetails || '',
+                    founderProfiles: answers.founderProfiles || '',
+                    teamStory: answers.teamStory || '',
+                    goals: answers.goals || '',
+                    otherInformation: answers.otherInformation || '',
 
-                        opportunitySolution: answers.opportunitySolution || '',
-                        whyNow: answers.whyNow || '',
-                        marketSizing: answers.marketSizing || '',
-                        tamSamSomMetrics: answers.tamSamSomMetrics || '',
-                        competitorAnalysis: answers.competitorAnalysis || '',
-                        targetCustomer: answers.targetCustomer || '',
-                        businessModel: answers.businessModel || '',
-                        region: answers.region || '',
-                        businessType: answers.businessType || '',
-                        industry: answers.industry || '',
-                        revenue: answers.revenue || '',
-                        customers: answers.customers || '',
-                        funding: answers.funding || '',
-                        teamSize: answers.teamSize || '',
-                        runway: answers.runway || '',
-                        productReadiness: answers.productReadiness || '',
-                        risksAssumptions: answers.risksAssumptions || '',
-                        engagementQuality: answers.engagementQuality || '',
-                        goToMarket: answers.goToMarket || '',
-                        tractionSignals: answers.tractionSignals || '',
-                        tractionDetails: answers.tractionDetails || '',
-                        founderProfiles: answers.founderProfiles || '',
-                        teamStory: answers.teamStory || '',
-                        goals: answers.goals || '',
-                        otherInformation: answers.otherInformation || '',
+                    recaptchaToken,
+                    recaptchaAction: 'submit_form',
+                    clientRequestId,
+                    // authToken: 'REPLACE_IF_YOU_ENABLE_SHARED_SECRET' // not needed with the current backend
+                    ...stageSpecificAnswers
+                };
 
-                        // Security
-                        recaptchaToken: recaptchaToken,
-                        recaptchaAction: 'submit_form',
-                        authToken: 'REPLACE_WITH_YOUR_SHARED_SECRET',   // must match Apps Script Script Property AUTH_TOKEN
-                        clientRequestId,                                 // idempotency key
-
-                        // Merge in stage-specific answers (flat keys)
-                        ...stageSpecificAnswers
-                    };
-
-                    // Submit via hidden iframe with a cache-buster to avoid any caching
-                    const form = document.createElement('form');
-                    form.method = 'POST';
-                    form.action = SCRIPT_URL + '?t=' + Date.now();
-                    form.target = 'hidden_iframe';
-
-                    const input = document.createElement('input');
-                    input.type = 'hidden';
-                    input.name = 'data';
-                    input.value = JSON.stringify(data);
-                    form.appendChild(input);
-
-                    document.body.appendChild(form);
-                    form.submit();
-
-                    // Optional: re-enable UI after a few seconds if you want users to try again
-                    setTimeout(() => {
-                        if (btn) btn.disabled = false;
-                        isSubmitting = false;
-                    }, 6000);
-
-                    // (Optional) Replace any success-echo UI with escaped values to avoid XSS
-                    if (results && results.innerHTML.indexOf('Data Submitted Successfully') === -1) {
-                        results.innerHTML += `
-                            <div class="success-message">
-                                <h3>✅ Data Submitted (sent to Google Sheets)</h3>
-                                <p><strong>Stage:</strong> ${esc(stageResult.stage)}</p>
-                                <p><strong>Score:</strong> ${esc(stageResult.score)}/10</p>
-                                <p><strong>Profile:</strong> ${esc(stageResult.profile)}</p>
-                                <p><strong>Company:</strong> ${esc(answers.companyName || 'N/A')}</p>
-                                <p><strong>Email:</strong> ${esc(answers.email || 'N/A')}</p>
-                            </div>
-                        `;
-                    }
+                const res = await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data) // backend now supports raw JSON too
                 });
-            });
+                const json = await res.json();
+
+                if (json && (json.success || json.ok)) {
+                    // Submission successful - no popup message, just continue to results
+                    console.log('Data submitted successfully');
+                } else {
+                    throw new Error((json && (json.error || json.detail)) || 'Unknown server error');
+                }
+            } catch (err) {
+                console.error('Submission error:', err);
+                alert('Sorry, there was an error submitting your data. Please try again.');
+            } finally {
+                if (btn) { btn.disabled = false; btn.textContent = 'Submit & Finish'; }
+                isSubmitting = false;
+            }
         }
 
         // Initialize - show consent screen first
