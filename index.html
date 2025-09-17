@@ -256,9 +256,6 @@
         </div>
     </div>
 
-    <!-- Hidden iframe for form submission -->
-    <iframe name="hidden_iframe" id="hidden_iframe" style="display:none;"></iframe>
-
     <div class="container">
         <div id="consentScreen" class="consent-screen">
             <h2>Welcome to the Traction Hub Diagnostic Tool</h2>
@@ -616,8 +613,12 @@
         </div>
     </div>
     <script>
+        // Constants
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwpZcGgF6PjAbg9LIpcNGSo7mC-QNIYbSMEwZJG5b4tfUmAWJy73SfZQhcq7nR1CpK_QA/exec';
+        const SITE_KEY   = '6LeDWswrAAAAADVX7MwZTYY6rjcGHcIbetigTpIH';
+        
         // Prevent duplicate submissions
-        let isSubmitting = false;
+        let isSubmitting = false; // ensure single in-flight submit
         let lastClientRequestId = null;
 
         // Minimal HTML-escape helper for any values echoed back to the page
@@ -2209,23 +2210,17 @@
             showStageResults();
         }
 
-        function submitAndFinish() {
-            // Validate current stage question before finishing
-            if (!validateStageQuestion()) {
-                return;
-            }
-            
-            // Save the final stage answer
+        async function submitAndFinish() {
+            if (!validateStageQuestion()) return;
             saveStageAnswer();
-            
-            // Auto-save progress before finishing
             saveProgress();
-            
-            // Submit to Google Sheets first
-            submitToGoogleSheets();
-            
-            // Then show the final results page
-            showStageResults();
+
+            const ok = await submitToGoogleSheets();
+            if (ok) {
+                showStageResults(); // your existing success UI
+            } else {
+                showSubmissionError('The server did not accept your submission. Please try again.');
+            }
         }
 
         function showStageResults() {
@@ -2269,26 +2264,16 @@
 
 
         async function submitToGoogleSheets() {
-            if (isSubmitting) return;
+            if (isSubmitting) return false;
             isSubmitting = true;
 
             const btn = document.getElementById('submitBtn');
             if (btn) { btn.disabled = true; btn.textContent = 'Submitting...'; }
 
-            const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxL7bBNm0Zv27dxzF1IyBGlNADEk_ykDtarfIcLz7zSIM2rQrO2xg7AvDKwE9I4KBUepg/exec'; // must be the latest deploy
-            const SITE_KEY   = '6LeDWswrAAAAADVX7MwZTYY6rjcGHcIbetigTpIH';
-
-            // Client idempotency key (optional)
-            const clientRequestId = (crypto.randomUUID && crypto.randomUUID()) ? crypto.randomUUID()
-                                         : (Date.now() + '-' + Math.random().toString(16).slice(2));
-            lastClientRequestId = clientRequestId;
-
             try {
-                // Get token
                 await grecaptcha.ready();
                 const recaptchaToken = await grecaptcha.execute(SITE_KEY, { action: 'submit_form' });
 
-                // Build payload (unchanged fields)
                 const data = {
                     submissionDate: new Date().toLocaleDateString(),
                     timestamp: new Date().toISOString(),
@@ -2330,31 +2315,38 @@
 
                     recaptchaToken,
                     recaptchaAction: 'submit_form',
-                    clientRequestId,
-                    // authToken: 'REPLACE_IF_YOU_ENABLE_SHARED_SECRET' // not needed with the current backend
+
+                    // Include stage-specific answers last
                     ...stageSpecificAnswers
                 };
 
                 const res = await fetch(SCRIPT_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data) // backend now supports raw JSON too
+                    body: JSON.stringify(data)
                 });
-                const json = await res.json();
 
-                if (json && (json.success || json.ok)) {
-                    // Submission successful - no popup message, just continue to results
-                    console.log('Data submitted successfully');
+                const json = await res.json().catch(() => null);
+                if (json && json.success) {
+                    return true;
                 } else {
-                    throw new Error((json && (json.error || json.detail)) || 'Unknown server error');
+                    const msg = (json && (json.error || json.detail)) || `HTTP ${res.status}`;
+                    throw new Error(msg);
                 }
             } catch (err) {
                 console.error('Submission error:', err);
-                alert('Sorry, there was an error submitting your data. Please try again.');
+                return false;
             } finally {
                 if (btn) { btn.disabled = false; btn.textContent = 'Submit & Finish'; }
                 isSubmitting = false;
             }
+        }
+
+        function showSubmissionError(msg) {
+            const results = document.getElementById('results');
+            if (!results) { alert('Submit failed: ' + msg); return; }
+            results.style.display = 'block';
+            results.innerHTML += `<div class="error-message"><h3>❌ Submit failed</h3><p>${esc(msg)}</p></div>`;
         }
 
         // Initialize - show consent screen first
@@ -2437,6 +2429,4 @@
     </script>
 </body>
 </html>
-
-
 
