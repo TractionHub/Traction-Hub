@@ -614,7 +614,7 @@
     </div>
     <script>
         // Constants
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwpZcGgF6PjAbg9LIpcNGSo7mC-QNIYbSMEwZJG5b4tfUmAWJy73SfZQhcq7nR1CpK_QA/exec';
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxsJx6mzT0UYrs8_IHqGAnC4V4Lel4TNynDQCY41BIJbgCu3hGsUugGYyjVt6YVah2zwg/exec';
         const SITE_KEY   = '6LeDWswrAAAAADVX7MwZTYY6rjcGHcIbetigTpIH';
         
         // Prevent duplicate submissions
@@ -2273,7 +2273,10 @@
             try {
                 await grecaptcha.ready();
                 const recaptchaToken = await grecaptcha.execute(SITE_KEY, { action: 'submit_form' });
+                // optional debug
+                // console.log('token len', (recaptchaToken||'').length);
 
+                // Build payload from your state objects
                 const data = {
                     submissionDate: new Date().toLocaleDateString(),
                     timestamp: new Date().toISOString(),
@@ -2323,18 +2326,21 @@
                 const res = await fetch(SCRIPT_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
+                    credentials: 'omit',
                     body: JSON.stringify(data)
                 });
 
                 const json = await res.json().catch(() => null);
+
                 if (json && json.success) {
                     return true;
                 } else {
-                    const msg = (json && (json.error || json.detail)) || `HTTP ${res.status}`;
-                    throw new Error(msg);
+                    const msg = (json && (json.error || json.detail) + (json.score!=null? ` (score ${json.score})` : '')) || `HTTP ${res.status}`;
+                    showSubmissionError(msg);
+                    return false;
                 }
             } catch (err) {
-                console.error('Submission error:', err);
+                showSubmissionError(String(err));
                 return false;
             } finally {
                 if (btn) { btn.disabled = false; btn.textContent = 'Submit & Finish'; }
@@ -2429,4 +2435,5 @@
     </script>
 </body>
 </html>
+
 
