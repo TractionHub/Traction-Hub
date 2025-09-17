@@ -230,7 +230,6 @@
             }
         }
     </style>
-    <script src="https://www.google.com/recaptcha/api.js?render=6LeDWswrAAAAADVX7MwZTYY6rjcGHcIbetigTpIH"></script>
 </head>
 <body>
     <!-- Help Icon -->
@@ -614,8 +613,7 @@
     </div>
     <script>
         // Constants
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzFJePcxmEx3UU2g9eJjnVHbArRykFyBsBF35cnwt9NcgUs4f-i7j_fRoCOvQfHa5RK5A/exec';
-        const SITE_KEY   = '6LeDWswrAAAAADVX7MwZTYY6rjcGHcIbetigTpIH';
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyuiK3HbChUT9Hlkiq9AeBgqrtTbf4x4uOBsQMn-hVlZF0iGG2FrwpgbhglN4T9ct8Qfw/exec';
         
         // Prevent duplicate submissions
         let isSubmitting = false; // ensure single in-flight submit
@@ -2271,11 +2269,6 @@
             if (btn) { btn.disabled = true; btn.textContent = 'Submitting...'; }
 
             try {
-                await grecaptcha.ready();
-                const recaptchaToken = await grecaptcha.execute(SITE_KEY, { action: 'submit_form' });
-                // optional debug
-                // console.log('token len', (recaptchaToken||'').length);
-
                 // Build payload from your state objects
                 const data = {
                     submissionDate: new Date().toLocaleDateString(),
@@ -2315,9 +2308,6 @@
                     teamStory: answers.teamStory || '',
                     goals: answers.goals || '',
                     otherInformation: answers.otherInformation || '',
-
-                    recaptchaToken,
-                    recaptchaAction: 'submit_form',
 
                     // Include stage-specific answers last
                     ...stageSpecificAnswers
@@ -2414,6 +2404,30 @@
         function showMainContent() {
             document.getElementById('terms').style.display = 'none';
             document.getElementById('framework').style.display = 'none';
+            document.getElementById('consentScreen').style.display = 'block';
+        }
+
+        function goHome() {
+            // Hide all sections
+            document.getElementById('terms').style.display = 'none';
+            document.getElementById('framework').style.display = 'none';
+            document.getElementById('mainForm').style.display = 'none';
+            document.getElementById('results').style.display = 'none';
+            // Show landing page
+            document.getElementById('consentScreen').style.display = 'block';
+        }
+
+
+        // Check for saved progress when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            checkForSavedProgress();
+        });
+    </script>
+</body>
+</html>
+
+
+      document.getElementById('framework').style.display = 'none';
             document.getElementById('consentScreen').style.display = 'block';
         }
 
